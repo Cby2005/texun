@@ -15,11 +15,11 @@ export const useUserStore = defineStore('user', () => {
   const isFarmAdmin = computed(() => primaryRole.value === 'FARM_ADMIN')
   const isTraceAdmin = computed(() => primaryRole.value === 'TRACE_ADMIN')
   const isExpert = computed(() => primaryRole.value === 'EXPERT')
-  const isAuditor = computed(() => primaryRole.value === 'AUDITOR')
+  const isConsumer = computed(() => primaryRole.value === 'CONSUMER')
 
   const roleLabel = computed(() => {
-    const map = { ADMIN: '超级管理员', FARM_ADMIN: '农场管理员', TRACE_ADMIN: '溯源用户',
-      EXPERT: '农技专家', FARMER: '农户', AUDITOR: '审核员' }
+    const map = { ADMIN: '管理员', FARM_ADMIN: '农场管理员', TRACE_ADMIN: '溯源企业',
+      EXPERT: '专家', FARMER: '农户', CONSUMER: '消费者' }
     return map[primaryRole.value] || primaryRole.value
   })
 
@@ -49,6 +49,6 @@ export const useUserStore = defineStore('user', () => {
   }
 
   return { token, refreshToken, username, nickname, roles, permissions,
-    isLoggedIn, primaryRole, isAdmin, isFarmAdmin, isTraceAdmin, isExpert, isAuditor,
+    isLoggedIn, primaryRole, isAdmin, isFarmAdmin, isTraceAdmin, isExpert, isConsumer,
     roleLabel, login, logout }
 })

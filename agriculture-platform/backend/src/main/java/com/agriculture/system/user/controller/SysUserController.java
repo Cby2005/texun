@@ -3,6 +3,10 @@ package com.agriculture.system.user.controller;
 import com.agriculture.common.result.Result;
 import com.agriculture.common.result.PageResult;
 import com.agriculture.common.security.UserContext;
+import com.agriculture.system.role.entity.SysRole;
+import com.agriculture.system.role.entity.SysUserRole;
+import com.agriculture.system.role.mapper.SysUserRoleMapper;
+import com.agriculture.system.role.service.SysRoleService;
 import com.agriculture.system.user.entity.SysUser;
 import com.agriculture.system.user.service.SysUserService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -22,6 +26,8 @@ public class SysUserController {
 
     private final SysUserService userService;
     private final PasswordEncoder passwordEncoder;
+    private final SysRoleService roleService;
+    private final SysUserRoleMapper userRoleMapper;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN')")
@@ -57,6 +63,7 @@ public class SysUserController {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setStatus(0);
         userService.save(user);
+        syncUserRole(user.getId(), user.getUserType());
         return Result.ok();
     }
 
@@ -70,6 +77,7 @@ public class SysUserController {
             user.setPassword(null);
         }
         userService.updateById(user);
+        syncUserRole(id, user.getUserType());
         return Result.ok();
     }
 
@@ -77,6 +85,7 @@ public class SysUserController {
     @PreAuthorize("hasAnyRole('ADMIN')")
     public Result<Void> delete(@PathVariable Long id) {
         userService.removeById(id);
+        userRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getUserId, id));
         return Result.ok();
     }
 
@@ -102,5 +111,33 @@ public class SysUserController {
         user.setPassword(passwordEncoder.encode(newPwd));
         userService.updateById(user);
         return Result.ok();
+    }
+
+    private void syncUserRole(Long userId, Integer userType) {
+        if (userId == null || userType == null) {
+            return;
+        }
+        String roleCode = roleCodeOf(userType);
+        SysRole role = roleService.getOne(new LambdaQueryWrapper<SysRole>().eq(SysRole::getCode, roleCode).last("LIMIT 1"));
+        if (role == null) {
+            return;
+        }
+        userRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getUserId, userId));
+        SysUserRole userRole = new SysUserRole();
+        userRole.setUserId(userId);
+        userRole.setRoleId(role.getId());
+        userRole.setDeleted(0);
+        userRoleMapper.insert(userRole);
+    }
+
+    private String roleCodeOf(Integer userType) {
+        return switch (userType) {
+            case 0 -> "ADMIN";
+            case 1 -> "FARM_ADMIN";
+            case 2 -> "TRACE_ADMIN";
+            case 3 -> "EXPERT";
+            case 5 -> "CONSUMER";
+            default -> "FARMER";
+        };
     }
 }

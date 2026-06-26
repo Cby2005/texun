@@ -20,7 +20,7 @@ public class TraceBatchController {
     private final IService<TraceBatch> service;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','TRACE_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','FARM_ADMIN','TRACE_ADMIN','FARMER')")
     public Result<PageResult<TraceBatch>> list(
             @RequestParam(defaultValue = "1") int pageNum,
             @RequestParam(defaultValue = "10") int pageSize,
@@ -35,15 +35,15 @@ public class TraceBatchController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','TRACE_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','FARM_ADMIN','TRACE_ADMIN','FARMER')")
     public Result<TraceBatch> getById(@PathVariable Long id) { return Result.ok(service.getById(id)); }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','TRACE_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','FARM_ADMIN','TRACE_ADMIN')")
     public Result<Void> add(@RequestBody TraceBatch b) { service.save(b); return Result.ok(); }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','TRACE_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','FARM_ADMIN','TRACE_ADMIN')")
     public Result<Void> update(@PathVariable Long id, @RequestBody TraceBatch b) { b.setId(id); service.updateById(b); return Result.ok(); }
 
     @DeleteMapping("/{id}")

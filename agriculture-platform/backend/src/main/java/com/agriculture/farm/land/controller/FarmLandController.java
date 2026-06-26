@@ -20,7 +20,7 @@ public class FarmLandController {
     private final IService<FarmLand> service;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','FARM_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','FARM_ADMIN','FARMER')")
     public Result<PageResult<FarmLand>> list(
             @RequestParam(defaultValue = "1") int pageNum,
             @RequestParam(defaultValue = "10") int pageSize,

@@ -20,7 +20,7 @@ public class SysUser {
 
     private String nickname;
 
-    /** 0超管 1农场管理员 2溯源企业 3农技专家 4普通农户 5内容审核员 */
+    /** 0管理员 1农场管理员 2溯源企业 3专家 4农户 5消费者 */
     private Integer userType;
 
     private String phone;

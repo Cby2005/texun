@@ -1,4 +1,4 @@
-package com.agriculture.system.user.entity;
+package com.agriculture.system.role.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -12,4 +12,5 @@ public class SysUserRole {
     private Long id;
     private Long userId;
     private Long roleId;
+    private Integer deleted;
 }

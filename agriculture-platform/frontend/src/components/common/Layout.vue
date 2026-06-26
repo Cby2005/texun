@@ -58,7 +58,7 @@ const router = useRouter()
 const store = useUserStore()
 
 const roleTagType = computed(() => {
-  const m = { ADMIN: 'danger', FARM_ADMIN: 'warning', TRACE_ADMIN: 'primary', EXPERT: 'success', FARMER: '', AUDITOR: 'info' }
+  const m = { ADMIN: 'danger', FARM_ADMIN: 'warning', TRACE_ADMIN: 'primary', EXPERT: 'success', FARMER: '', CONSUMER: 'info' }
   return m[store.primaryRole] || ''
 })
 
@@ -67,31 +67,32 @@ const menuData = [
   { title: '农场管理', icon: 'Grid', children: [
     { title: '农场管理', path: '/farm/enterprises', icon: 'OfficeBuilding', roles: ['ADMIN','FARM_ADMIN'] },
     { title: '地块管理', path: '/farm/lands', icon: 'Grid', roles: ['ADMIN','FARM_ADMIN'] },
-    { title: '作物管理', path: '/farm/crops', icon: 'Apple' },
+    { title: '作物管理', path: '/farm/crops', icon: 'Apple', roles: ['ADMIN','FARM_ADMIN','FARMER'] },
     { title: '设备管理', path: '/farm/devices', icon: 'Cpu', roles: ['ADMIN','FARM_ADMIN'] },
-    { title: '环境监测', path: '/farm/env', icon: 'DataLine' },
-    { title: '天气预测', path: '/farm/weather', icon: 'PartlyCloudy' },
-    { title: '产量预测', path: '/farm/yield', icon: 'TrendCharts' }
+    { title: '环境监测', path: '/farm/env', icon: 'DataLine', roles: ['ADMIN','FARM_ADMIN','FARMER'] },
+    { title: '天气预测', path: '/farm/weather', icon: 'PartlyCloudy', roles: ['ADMIN','FARM_ADMIN','FARMER'] },
+    { title: '产量预测', path: '/farm/yield', icon: 'TrendCharts', roles: ['ADMIN','FARM_ADMIN','FARMER'] }
   ]},
   { title: '溯源管理', icon: 'Goods', children: [
     { title: '产品管理', path: '/trace/products', icon: 'ShoppingBag', roles: ['ADMIN','TRACE_ADMIN'] },
-    { title: '批次管理', path: '/trace/batches', icon: 'Box', roles: ['ADMIN','TRACE_ADMIN'] },
+    { title: '批次管理', path: '/trace/batches', icon: 'Box', roles: ['ADMIN','FARM_ADMIN','TRACE_ADMIN'] },
     { title: '种植记录', path: '/trace/production', icon: 'Sunny', roles: ['ADMIN','TRACE_ADMIN'] },
     { title: '加工记录', path: '/trace/processing', icon: 'SetUp', roles: ['ADMIN','TRACE_ADMIN'] },
     { title: '仓储记录', path: '/trace/storage', icon: 'Histogram', roles: ['ADMIN','TRACE_ADMIN'] },
     { title: '物流记录', path: '/trace/logistics', icon: 'Van', roles: ['ADMIN','TRACE_ADMIN'] },
     { title: '质检记录', path: '/trace/quality', icon: 'Finished', roles: ['ADMIN','TRACE_ADMIN'] },
     { title: '销售记录', path: '/trace/sales', icon: 'Sell', roles: ['ADMIN','TRACE_ADMIN'] },
-    { title: '全链追溯', path: '/trace/chain', icon: 'Link', roles: ['ADMIN','TRACE_ADMIN'] }
+    { title: '全链追溯', path: '/trace/chain', icon: 'Link', roles: ['ADMIN','TRACE_ADMIN'] },
+    { title: '公开溯源', path: '/trace/public', icon: 'Search', roles: ['CONSUMER'] }
   ]},
   { title: '技术推广', icon: 'Reading', children: [
-    { title: '农技文章', path: '/knowledge/articles', icon: 'Document' },
-    { title: '问答社区', path: '/knowledge/questions', icon: 'ChatDotRound' },
-    { title: '智能提问', path: '/knowledge/smart-question', icon: 'MagicStick' },
-    { title: '农技讲座', path: '/knowledge/lectures', icon: 'VideoCamera' },
-    { title: '农技视频', path: '/knowledge/videos', icon: 'Film' },
-    { title: '病虫害知识', path: '/knowledge/pests', icon: 'Warning' },
-    { title: '知识图谱', path: '/knowledge/graph', icon: 'Share' },
+    { title: '农技文章', path: '/knowledge/articles', icon: 'Document', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
+    { title: '问答社区', path: '/knowledge/questions', icon: 'ChatDotRound', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
+    { title: '智能提问', path: '/knowledge/smart-question', icon: 'MagicStick', roles: ['ADMIN','FARM_ADMIN','FARMER'] },
+    { title: '农技讲座', path: '/knowledge/lectures', icon: 'VideoCamera', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
+    { title: '农技视频', path: '/knowledge/videos', icon: 'Film', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
+    { title: '病虫害知识', path: '/knowledge/pests', icon: 'Warning', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
+    { title: '知识图谱', path: '/knowledge/graph', icon: 'Share', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
     { title: '技术分类', path: '/knowledge/categories', icon: 'Folder', roles: ['ADMIN'] }
   ]},
   { title: '系统管理', icon: 'Setting', children: [
@@ -102,10 +103,11 @@ const menuData = [
 ]
 
 const filteredMenu = computed(() => {
-  return menuData.filter(item => {
+  return menuData.map(item => ({ ...item, children: item.children ? [...item.children] : undefined })).filter(item => {
     if (item.roles && !item.roles.some(r => store.roles.includes(r))) return false
     if (item.children) {
       item.children = item.children.filter(c => !c.roles || c.roles.some(r => store.roles.includes(r)))
+      if (!item.children.length) return false
     }
     return true
   })

@@ -13,8 +13,11 @@ public class KnowledgeQuestion {
     private Long userId;
     private Long categoryId;
     private Long cropId;
-    @TableField(exist = false)
     private String cropType;
+    private Long landId;
+    private String batchNo;
+    private String growthStage;
+    private String region;
     private String title;
     private String content;
     private String imageUrls;

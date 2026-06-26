@@ -29,3 +29,4 @@ export function getLatestEnvAll() { return request.get('/farm/env/latest') }
 
 export function getDashboardStats() { return request.get('/dashboard/stats') }
 export function getEnvSummary() { return request.get('/dashboard/env/summary') }
+export function getRoleDashboard() { return request.get('/dashboard/role') }

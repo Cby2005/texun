@@ -1,6 +1,7 @@
 package com.agriculture.knowledge.question.controller;
 
 import com.agriculture.common.result.Result;
+import com.agriculture.common.security.UserContext;
 import com.agriculture.knowledge.question.entity.KnowledgeQuestion;
 import com.agriculture.yolo.dto.YoloDetectResponse;
 import com.agriculture.yolo.service.YoloService;
@@ -45,14 +46,26 @@ public class SmartQaController {
             @RequestParam("cropType") String cropType,
             @RequestParam("categoryId") Integer categoryId,
             @RequestParam("description") String description,
+            @RequestParam(value = "landId", required = false) Long landId,
+            @RequestParam(value = "cropId", required = false) Long cropId,
+            @RequestParam(value = "batchNo", required = false) String batchNo,
             @RequestParam(value = "region", required = false) String region,
             @RequestParam(value = "growthStage", required = false) String growthStage,
             @RequestParam(value = "image", required = false) MultipartFile image) {
+        Long userId = UserContext.getCurrentUserId();
+        if (userId == null) {
+            return Result.fail(401, "请先登录");
+        }
 
         KnowledgeQuestion question = new KnowledgeQuestion();
-        question.setUserId(0L);
+        question.setUserId(userId);
         question.setTitle(title);
         question.setCropType(cropType);
+        question.setCropId(cropId);
+        question.setLandId(landId);
+        question.setBatchNo(batchNo);
+        question.setGrowthStage(growthStage);
+        question.setRegion(region);
         question.setContent(description);
         question.setCategoryId(categoryId.longValue());
         question.setStatus("PENDING");

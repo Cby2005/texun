@@ -5,8 +5,8 @@
       <el-input v-model="keyword" placeholder="搜索用户名/昵称/手机号" clearable style="width:240px" @clear="load" @keyup.enter="load" />
       <el-select v-model="userType" placeholder="用户类型" clearable style="width:160px" @change="load">
         <el-option :value="0" label="超级管理员" /><el-option :value="1" label="农场管理员" />
-        <el-option :value="2" label="溯源企业" /><el-option :value="3" label="农技专家" />
-        <el-option :value="4" label="普通农户" /><el-option :value="5" label="审核员" />
+        <el-option :value="2" label="溯源企业" /><el-option :value="3" label="专家" />
+        <el-option :value="4" label="农户" /><el-option :value="5" label="消费者" />
       </el-select>
       <el-button type="primary" @click="load"><el-icon><Search /></el-icon>搜索</el-button>
       <el-button type="success" @click="showAdd"><el-icon><Plus /></el-icon>新增用户</el-button>
@@ -45,8 +45,8 @@
         <el-form-item label="用户类型">
           <el-select v-model="dlg.form.userType">
             <el-option :value="0" label="超级管理员" /><el-option :value="1" label="农场管理员" />
-            <el-option :value="2" label="溯源企业" /><el-option :value="3" label="农技专家" />
-            <el-option :value="4" label="普通农户" /><el-option :value="5" label="审核员" />
+            <el-option :value="2" label="溯源企业" /><el-option :value="3" label="专家" />
+            <el-option :value="4" label="农户" /><el-option :value="5" label="消费者" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
@@ -68,7 +68,7 @@ const keyword = ref(''), userType = ref(null)
 
 const dlg = reactive({ visible: false, isEdit: false, form: { username:'',password:'',nickname:'',phone:'',email:'',userType:4,status:0 } })
 
-const typeLabel = v => ['超级管理员','农场管理员','溯源企业','农技专家','普通农户','审核员'][v] || ''
+const typeLabel = v => ['管理员','农场管理员','溯源企业','专家','农户','消费者'][v] || ''
 const typeTag = v => ['danger','warning','primary','success','','info'][v] || ''
 
 async function load() {

@@ -106,7 +106,7 @@ public class KnowledgeArticleController {
     }
 
     @PutMapping("/{id}/audit")
-    @PreAuthorize("hasAnyRole('ADMIN','AUDITOR')")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public Result<Void> audit(@PathVariable Long id, @RequestParam String status, @RequestParam(required = false) String remark) {
         KnowledgeArticle article = new KnowledgeArticle();
         article.setId(id);
@@ -117,7 +117,7 @@ public class KnowledgeArticleController {
     }
 
     @GetMapping("/pending")
-    @PreAuthorize("hasAnyRole('ADMIN','AUDITOR')")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public Result<PageResult<KnowledgeArticle>> pending(
             @RequestParam(defaultValue = "1") int pageNum,
             @RequestParam(defaultValue = "10") int pageSize) {

@@ -51,7 +51,7 @@ CREATE TABLE `sys_user` (
     `username`      VARCHAR(50)  NOT NULL                 COMMENT '登录用户名',
     `password`      VARCHAR(200) NOT NULL                 COMMENT 'BCrypt加密密码',
     `nickname`      VARCHAR(50)  DEFAULT ''               COMMENT '昵称/姓名',
-    `user_type`     TINYINT      DEFAULT 4                COMMENT '用户类型: 0超管 1农场管理员 2溯源企业 3农技专家 4普通农户 5内容审核员',
+    `user_type`     TINYINT      DEFAULT 4                COMMENT '用户类型: 0管理员 1农场管理员 2溯源企业 3专家 4农户 5消费者',
     `email`         VARCHAR(100) DEFAULT ''               COMMENT '邮箱',
     `phone`         VARCHAR(20)  DEFAULT ''               COMMENT '手机号',
     `sex`           TINYINT      DEFAULT 2                COMMENT '性别: 0男 1女 2未知',
@@ -552,6 +552,7 @@ CREATE TABLE `farm_env_data` (
     `id`           BIGINT         NOT NULL AUTO_INCREMENT COMMENT '数据ID',
     `enterprise_id` BIGINT        NOT NULL                COMMENT '企业ID',
     `land_id`       BIGINT        NOT NULL                COMMENT '地块ID',
+    `batch_no`      VARCHAR(50)   DEFAULT NULL            COMMENT '生产批次号',
     `device_id`    BIGINT         NOT NULL                COMMENT '设备ID',
     `land_type`    TINYINT        DEFAULT 0               COMMENT '地块类型: 0大棚 1鱼塘 2大田 3仓库',
     `data_value`   DECIMAL(11,2)  DEFAULT NULL            COMMENT '采集数据值',
@@ -562,6 +563,7 @@ CREATE TABLE `farm_env_data` (
     `deleted`      TINYINT        DEFAULT 0               COMMENT '删除标志',
     PRIMARY KEY (`id`),
     INDEX `idx_enterprise_land` (`enterprise_id`, `land_id`),
+    INDEX `idx_batch_no` (`batch_no`),
     INDEX `idx_year_date_hour` (`year_date_hour`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='环境数据采集表';
 
@@ -1004,6 +1006,8 @@ CREATE TABLE `knowledge_article` (
     `user_id`        BIGINT       NOT NULL                COMMENT '作者ID',
     `category_id`    BIGINT       DEFAULT NULL            COMMENT '分类ID',
     `crop_id`        BIGINT       DEFAULT NULL            COMMENT '关联作物ID',
+    `crop_type`      VARCHAR(50)  DEFAULT NULL            COMMENT '作物类型',
+    `region`         VARCHAR(100) DEFAULT NULL            COMMENT '地区',
     `title`          VARCHAR(200) NOT NULL                COMMENT '文章标题',
     `content`        LONGTEXT                              COMMENT '文章正文（富文本）',
     `summary`       VARCHAR(500)  DEFAULT ''              COMMENT '摘要',
@@ -1123,10 +1127,15 @@ CREATE TABLE `knowledge_question` (
     `user_id`        BIGINT       NOT NULL                COMMENT '提问者ID',
     `category_id`    BIGINT       DEFAULT NULL            COMMENT '分类ID',
     `crop_id`        BIGINT       DEFAULT NULL            COMMENT '关联作物ID',
+    `crop_type`      VARCHAR(50)  DEFAULT NULL            COMMENT '作物类型',
+    `land_id`        BIGINT       DEFAULT NULL            COMMENT '关联地块ID',
+    `batch_no`       VARCHAR(50)  DEFAULT NULL            COMMENT '生产批次号',
+    `region`         VARCHAR(100) DEFAULT NULL            COMMENT '地区',
+    `growth_stage`   VARCHAR(50)  DEFAULT NULL            COMMENT '生长阶段',
     `title`          VARCHAR(200) NOT NULL                COMMENT '问题标题',
     `content`        TEXT                                  COMMENT '问题描述',
     `image_urls`     TEXT                                  COMMENT '问题图片URL列表(JSON)',
-    `status`         TINYINT      DEFAULT 0               COMMENT '0待回答 1已解决 2已关闭',
+    `status`         VARCHAR(20)  DEFAULT '0'             COMMENT '0待回答 1已解决 2已关闭 PENDING待处理 RESOLVED已解决',
     `view_count`     INT          DEFAULT 0               COMMENT '浏览数',
     `answer_count`   INT          DEFAULT 0               COMMENT '回答数',
     `best_answer_id` BIGINT       DEFAULT NULL            COMMENT '采纳的最佳回答ID',
@@ -1137,6 +1146,8 @@ CREATE TABLE `knowledge_question` (
     INDEX `idx_user_id` (`user_id`),
     INDEX `idx_category_id` (`category_id`),
     INDEX `idx_crop_id` (`crop_id`),
+    INDEX `idx_land_id` (`land_id`),
+    INDEX `idx_batch_no` (`batch_no`),
     INDEX `idx_status` (`status`),
     INDEX `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='问答问题表';
@@ -1532,7 +1543,7 @@ INSERT INTO `sys_role` (`id`, `code`, `name`, `role_key`, `role_sort`, `status`,
 (3, 'TRACE_ADMIN', '溯源企业用户',  'trace_admin', 3, 0, '溯源企业用户，负责产品溯源管理',     'admin', NOW()),
 (4, 'EXPERT',      '农技专家',      'expert',      4, 0, '农业技术专家，发布文章、回答问题',   'admin', NOW()),
 (5, 'FARMER',      '普通农户',      'farmer',      5, 0, '普通农户用户，浏览知识、提问',       'admin', NOW()),
-(6, 'AUDITOR',     '内容审核员',    'auditor',     6, 0, '内容审核人员，审核文章、问答、讲座', 'admin', NOW());
+(6, 'CONSUMER',    '消费者',        'consumer',    6, 0, '消费者用户，只查看公开溯源信息',             'admin', NOW());
 
 -- ----------------------------
 -- 初始化用户（BCrypt密码: 123456 → $2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2）
@@ -1543,7 +1554,7 @@ INSERT INTO `sys_user` (`id`, `dept_id`, `username`, `password`, `nickname`, `us
 (3,  102, 'trace_admin', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '溯源企业管理员', 2, '13800138002', 'trace@agri.com',      0, 'admin', NOW()),
 (4,  103, 'expert',      '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '农业专家',       3, '13800138003', 'expert@agri.com',     0, 'admin', NOW()),
 (5,  100, 'farmer',      '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '普通农户',       4, '13800138004', 'farmer@agri.com',     0, 'admin', NOW()),
-(6,  104, 'auditor',     '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '内容审核员',     5, '13800138005', 'auditor@agri.com',    0, 'admin', NOW());
+(6,  104, 'consumer',    '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '消费者',         5, '13800138005', 'consumer@agri.com',   0, 'admin', NOW());
 
 -- ----------------------------
 -- 初始化用户角色关联
@@ -1554,7 +1565,7 @@ INSERT INTO `sys_user_role` (`user_id`, `role_id`) VALUES
 (3, 3), -- trace_admin → TRACE_ADMIN
 (4, 4), -- expert → EXPERT
 (5, 5), -- farmer → FARMER
-(6, 6); -- auditor → AUDITOR
+(6, 6); -- consumer → CONSUMER
 
 -- ----------------------------
 -- 初始化菜单（前端菜单结构）
@@ -1588,6 +1599,7 @@ INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`
 (37, '销售记录',       3, 8, 'sales',              'trace/sales/index',  'C', 0, 0, 'trace:sales:list',     'sale',       'admin', NOW()),
 (38, '溯源码管理',     3, 9, 'qrcode',             'trace/qrcode/index', 'C', 0, 0, 'trace:qrcode:list',    'qrcode',     'admin', NOW()),
 (39, '区块链存证',     3,10, 'chain',              'trace/chain/index',  'C', 0, 0, 'trace:chain:list',     'link',       'admin', NOW()),
+(49, '公开溯源',       3,11, 'public',             'trace/public',       'C', 0, 0, 'trace:public:list',    'search',     'admin', NOW()),
 -- 农业技术推广子菜单
 (40, '农技文章',       4, 1, 'article',            'knowledge/article/index','C',0,0,'knowledge:article:list','document','admin', NOW()),
 (41, '技术分类',       4, 2, 'category',           'knowledge/category/index','C',0,0,'knowledge:category:list','folder','admin', NOW()),
@@ -1640,9 +1652,9 @@ INSERT INTO `sys_role_menu` (`role_id`, `menu_id`) VALUES
 INSERT INTO `sys_role_menu` (`role_id`, `menu_id`) VALUES
 (5,1),(5,4),(5,10),(5,40),(5,41),(5,42),(5,43),(5,45),(5,46),(5,47);
 
--- 内容审核员(AUDITOR): 首页 + 审核功能
+-- 消费者(CONSUMER): 首页 + 公开溯源
 INSERT INTO `sys_role_menu` (`role_id`, `menu_id`) VALUES
-(6,1),(6,4),(6,5),(6,10),(6,40),(6,41),(6,42),(6,45),(6,50),(6,55),(6,121),(6,122);
+(6,1),(6,3),(6,49);
 
 -- ----------------------------
 -- 初始化技术分类
@@ -1710,7 +1722,7 @@ INSERT INTO `sys_dict_data` (`dict_sort`, `dict_label`, `dict_value`, `dict_type
 (3, '溯源企业用户', '2', 'sys_user_type', 0, 'admin', NOW()),
 (4, '农技专家',     '3', 'sys_user_type', 0, 'admin', NOW()),
 (5, '普通农户',     '4', 'sys_user_type', 0, 'admin', NOW()),
-(6, '内容审核员',   '5', 'sys_user_type', 0, 'admin', NOW()),
+(6, '消费者',       '5', 'sys_user_type', 0, 'admin', NOW()),
 (7, '草稿',     '0', 'article_status', 0, 'admin', NOW()),
 (8, '待审核',   '1', 'article_status', 0, 'admin', NOW()),
 (9, '已发布',   '2', 'article_status', 0, 'admin', NOW()),

@@ -6,12 +6,15 @@ import com.agriculture.common.security.LoginUser;
 import com.agriculture.system.menu.dto.RouterTree;
 import com.agriculture.system.menu.service.SysMenuService;
 import com.agriculture.system.role.entity.SysRole;
+import com.agriculture.system.role.entity.SysUserRole;
 import com.agriculture.system.role.service.SysRoleService;
+import com.agriculture.system.role.mapper.SysUserRoleMapper;
 import com.agriculture.system.service.LoginService;
 import com.agriculture.system.user.dto.LoginRequest;
 import com.agriculture.system.user.dto.RegisterRequest;
 import com.agriculture.system.user.entity.SysUser;
 import com.agriculture.system.user.service.SysUserService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +35,7 @@ public class AuthController {
     private final LoginService loginService;
     private final SysUserService userService;
     private final SysRoleService roleService;
+    private final SysUserRoleMapper userRoleMapper;
     private final SysMenuService menuService;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
@@ -71,10 +75,49 @@ public class AuthController {
         user.setNickname(req.getUsername());
         user.setPhone(req.getPhone());
         user.setEmail(req.getEmail());
-        user.setUserType(req.getUserType() != null ? req.getUserType() : 4);
+        int userType = normalizeRegisterUserType(req.getUserType());
+        user.setUserType(userType);
         user.setStatus(0);
         userService.save(user);
+        bindUserRole(user.getId(), userType);
         return Result.ok();
+    }
+
+    private int normalizeRegisterUserType(Integer userType) {
+        if (userType == null) {
+            return 4;
+        }
+        if (userType == 2 || userType == 4 || userType == 5) {
+            return userType;
+        }
+        return 4;
+    }
+
+    private void bindUserRole(Long userId, Integer userType) {
+        String roleCode = roleCodeOf(userType);
+        SysRole role = roleService.getOne(new LambdaQueryWrapper<SysRole>().eq(SysRole::getCode, roleCode).last("LIMIT 1"));
+        if (role == null) {
+            return;
+        }
+        SysUserRole userRole = new SysUserRole();
+        userRole.setUserId(userId);
+        userRole.setRoleId(role.getId());
+        userRole.setDeleted(0);
+        userRoleMapper.insert(userRole);
+    }
+
+    private String roleCodeOf(Integer userType) {
+        if (userType == null) {
+            return "FARMER";
+        }
+        return switch (userType) {
+            case 0 -> "ADMIN";
+            case 1 -> "FARM_ADMIN";
+            case 2 -> "TRACE_ADMIN";
+            case 3 -> "EXPERT";
+            case 5 -> "CONSUMER";
+            default -> "FARMER";
+        };
     }
 
     @GetMapping("/userinfo")
