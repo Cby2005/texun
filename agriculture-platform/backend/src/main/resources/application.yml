@@ -1,0 +1,95 @@
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+spring:
+  application:
+    name: agriculture-platform
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/agriculture_platform?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: 20050828
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      connection-timeout: 30000
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: 0
+      timeout: 3000ms
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 200MB
+      max-request-size: 220MB
+
+  neo4j:
+    uri: ${NEO4J_URI:bolt://localhost:7687}
+    authentication:
+      username: ${NEO4J_USER:neo4j}
+      password: ${NEO4J_PASSWORD:12345678}
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+    banner: false
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
+app:
+  jwt:
+    secret: AgriculturePlatformJwtSecretKey2024MustBeLongEnoughForSecurity
+    access-token-expiration: 7200
+    refresh-token-expiration: 604800
+  file:
+    base-path: ./runtime/files
+    base-url: http://localhost:8080/files
+  upload:
+    path: ./runtime/files
+    url-prefix: /files
+  yolo:
+    provider: ${YOLO_PROVIDER:local}
+    service-url: ${YOLO_SERVICE_URL:http://localhost:8001/detect}
+    confidence-threshold: 0.50
+  roboflow:
+    api-url: ${ROBOFLOW_API_URL:https://serverless.roboflow.com}
+    api-key: ${ROBOFLOW_API_KEY:HdXYoA0dKYSqizkkXlmq}
+    model-id: ${ROBOFLOW_MODEL_ID:pest-detection-yolov8/1}
+  agent:
+    diagnosis-url: ${AGENT_SERVICE_URL:http://localhost:8002/diagnose}
+
+logging:
+  level:
+    com.agriculture: DEBUG
+    org.springframework.security: DEBUG
