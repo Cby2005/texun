@@ -18,9 +18,9 @@
     </div>
 
     <el-card v-if="store.primaryRole === 'CONSUMER'" class="trace-query">
-      <template #header><span>公开溯源查询</span></template>
+      <template #header><span>有机草莓公开溯源查询</span></template>
       <div class="query-line">
-        <el-input v-model="batchNo" placeholder="输入生产批次号" clearable @keyup.enter="loadPublicTrace" />
+        <el-input v-model="batchNo" placeholder="输入生产批次号，如 B202406001" clearable @keyup.enter="loadPublicTrace" />
         <el-button type="primary" @click="loadPublicTrace">查询</el-button>
       </div>
       <el-descriptions v-if="publicTrace" :column="3" border size="small" class="trace-summary">
@@ -60,7 +60,7 @@ const store = useUserStore()
 const stats = ref({})
 const roleData = ref({})
 const envData = ref([])
-const batchNo = ref('')
+const batchNo = ref('B202406001')
 const publicTrace = ref(null)
 
 const roleCards = computed(() => roleData.value.cards || [
@@ -72,24 +72,26 @@ const roleCards = computed(() => roleData.value.cards || [
 
 const pageTitle = computed(() => {
   const map = {
-    FARMER: '农户首页',
-    FARM_ADMIN: '农场管理首页',
+    FARMER: '草莓种植户首页',
+    FARM_ADMIN: '草莓基地管理首页',
     EXPERT: '专家工作台',
     TRACE_ADMIN: '溯源企业首页',
     CONSUMER: '消费者溯源页',
-    ADMIN: '管理员驾驶舱'
+    ADMIN: '温室草莓驾驶舱'
   }
-  return map[store.primaryRole] || '首页驾驶舱'
+  return map[store.primaryRole] || '温室草莓驾驶舱'
 })
 
 const pageSubtitle = computed(() => {
   const map = {
-    FARMER: '关注待处理问题、环境异常和推荐知识',
+    FARMER: '学习草莓种植知识，提交病虫害图片和生产问题',
+    FARM_ADMIN: '掌握温室环境、设备状态、农事记录和产量信息',
     EXPERT: '处理待审核诊断和待回答问题',
-    TRACE_ADMIN: '查看批次、溯源完整度和产品状态',
-    CONSUMER: '查询公开生产批次溯源信息'
+    TRACE_ADMIN: '维护有机草莓批次、质检、仓储、物流和销售链路',
+    CONSUMER: '查询有机草莓批次来源、质检和物流信息',
+    ADMIN: '查看温室草莓生产、溯源、农技和诊断概览'
   }
-  return map[store.primaryRole] || '智慧农业综合服务平台概览'
+  return map[store.primaryRole] || '温室草莓生产与溯源闭环概览'
 })
 
 onMounted(async () => {

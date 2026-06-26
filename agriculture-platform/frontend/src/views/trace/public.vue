@@ -2,11 +2,11 @@
   <div class="page public-trace">
     <div class="page-header">
       <h2>公开溯源</h2>
-      <p>消费者可通过生产批次号查看公开的生产、诊断、质检和物流链路。</p>
+      <p>消费者可通过生产批次号查看有机草莓的生产、诊断、质检和物流链路。</p>
     </div>
     <el-card>
       <div class="query-line">
-        <el-input v-model="batchNo" placeholder="输入生产批次号" clearable @keyup.enter="loadTrace" />
+        <el-input v-model="batchNo" placeholder="输入生产批次号，如 B202406001" clearable @keyup.enter="loadTrace" />
         <el-button type="primary" @click="loadTrace">查询</el-button>
       </div>
     </el-card>
@@ -41,7 +41,7 @@ import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getPublicChainTrace } from '../../api/trace'
 
-const batchNo = ref('')
+const batchNo = ref('B202406001')
 const trace = ref(null)
 
 async function loadTrace() {

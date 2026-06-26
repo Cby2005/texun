@@ -1,12 +1,12 @@
 <template>
   <div class="page">
-    <div class="page-header"><h2>全链路溯源</h2><p>输入批次号查询从种植到销售的全链路溯源信息</p></div>
+    <div class="page-header"><h2>有机草莓全链路溯源</h2><p>输入批次号查询草莓从种植到销售的全链路溯源信息</p></div>
     <div class="filter-bar">
-      <el-input v-model="batchNo" placeholder="请输入批次号" clearable style="width:300px" @keyup.enter="search" />
+      <el-input v-model="batchNo" placeholder="请输入批次号，如 B202406001" clearable style="width:300px" @keyup.enter="search" />
       <el-button type="primary" @click="search"><el-icon><Search /></el-icon>溯源查询</el-button>
     </div>
 
-    <el-empty v-if="!data" description="请输入批次号进行溯源查询" />
+    <el-empty v-if="!data" description="请输入批次号进行草莓溯源查询" />
 
     <div v-if="data" class="trace-result">
       <!-- 种植信息 -->
@@ -154,7 +154,7 @@ import { ref } from 'vue'
 import { getChainTrace } from '../../../api/trace'
 import { ElMessage } from 'element-plus'
 
-const batchNo = ref('')
+const batchNo = ref('B202406001')
 const data = ref(null)
 
 async function search() {

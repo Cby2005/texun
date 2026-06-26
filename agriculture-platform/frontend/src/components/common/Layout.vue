@@ -2,7 +2,7 @@
   <el-container class="layout">
     <el-aside width="220px" class="aside">
       <div class="logo">
-        <h2>智慧农业平台</h2>
+        <h2>温室草莓平台</h2>
       </div>
       <el-menu :default-active="route.path" router background-color="#001529" text-color="#ffffff80" active-text-color="#fff" class="side-menu">
         <template v-for="item in filteredMenu" :key="item.id || item.title">
@@ -63,10 +63,10 @@ const roleTagType = computed(() => {
 })
 
 const menuData = [
-  { title: '首页驾驶舱', path: '/dashboard', icon: 'Odometer' },
-  { title: '农场管理', icon: 'Grid', children: [
-    { title: '农场管理', path: '/farm/enterprises', icon: 'OfficeBuilding', roles: ['ADMIN','FARM_ADMIN'] },
-    { title: '地块管理', path: '/farm/lands', icon: 'Grid', roles: ['ADMIN','FARM_ADMIN'] },
+  { title: '草莓驾驶舱', path: '/dashboard', icon: 'Odometer' },
+  { title: '草莓基地', icon: 'Grid', children: [
+    { title: '基地管理', path: '/farm/enterprises', icon: 'OfficeBuilding', roles: ['ADMIN','FARM_ADMIN'] },
+    { title: '温室地块', path: '/farm/lands', icon: 'Grid', roles: ['ADMIN','FARM_ADMIN'] },
     { title: '作物管理', path: '/farm/crops', icon: 'Apple', roles: ['ADMIN','FARM_ADMIN','FARMER'] },
     { title: '设备管理', path: '/farm/devices', icon: 'Cpu', roles: ['ADMIN','FARM_ADMIN'] },
     { title: '环境监测', path: '/farm/env', icon: 'DataLine', roles: ['ADMIN','FARM_ADMIN','FARMER'] },
@@ -74,8 +74,8 @@ const menuData = [
     { title: '产量预测', path: '/farm/yield', icon: 'TrendCharts', roles: ['ADMIN','FARM_ADMIN','FARMER'] }
   ]},
   { title: '溯源管理', icon: 'Goods', children: [
-    { title: '产品管理', path: '/trace/products', icon: 'ShoppingBag', roles: ['ADMIN','TRACE_ADMIN'] },
-    { title: '批次管理', path: '/trace/batches', icon: 'Box', roles: ['ADMIN','FARM_ADMIN','TRACE_ADMIN'] },
+    { title: '草莓产品', path: '/trace/products', icon: 'ShoppingBag', roles: ['ADMIN','TRACE_ADMIN'] },
+    { title: '草莓批次', path: '/trace/batches', icon: 'Box', roles: ['ADMIN','FARM_ADMIN','TRACE_ADMIN'] },
     { title: '种植记录', path: '/trace/production', icon: 'Sunny', roles: ['ADMIN','TRACE_ADMIN'] },
     { title: '加工记录', path: '/trace/processing', icon: 'SetUp', roles: ['ADMIN','TRACE_ADMIN'] },
     { title: '仓储记录', path: '/trace/storage', icon: 'Histogram', roles: ['ADMIN','TRACE_ADMIN'] },
@@ -86,12 +86,12 @@ const menuData = [
     { title: '公开溯源', path: '/trace/public', icon: 'Search', roles: ['CONSUMER'] }
   ]},
   { title: '技术推广', icon: 'Reading', children: [
-    { title: '农技文章', path: '/knowledge/articles', icon: 'Document', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
+    { title: '草莓文章', path: '/knowledge/articles', icon: 'Document', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
     { title: '问答社区', path: '/knowledge/questions', icon: 'ChatDotRound', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
     { title: '智能提问', path: '/knowledge/smart-question', icon: 'MagicStick', roles: ['ADMIN','FARM_ADMIN','FARMER'] },
     { title: '农技讲座', path: '/knowledge/lectures', icon: 'VideoCamera', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
     { title: '农技视频', path: '/knowledge/videos', icon: 'Film', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
-    { title: '病虫害知识', path: '/knowledge/pests', icon: 'Warning', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
+    { title: '草莓病虫害', path: '/knowledge/pests', icon: 'Warning', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
     { title: '知识图谱', path: '/knowledge/graph', icon: 'Share', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
     { title: '技术分类', path: '/knowledge/categories', icon: 'Folder', roles: ['ADMIN'] }
   ]},
