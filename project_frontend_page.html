@@ -1,0 +1,1071 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>智慧农业综合服务平台</title>
+  <link rel="preconnect" href="https://images.unsplash.com" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --bg: #f4f7f1;
+      --surface: #ffffff;
+      --surface-soft: #edf4e7;
+      --ink: #1c2a22;
+      --muted: #66766b;
+      --line: #dce6d6;
+      --green: #2e7d4f;
+      --green-dark: #185f39;
+      --gold: #c8942e;
+      --teal: #278078;
+      --red: #b94c3a;
+      --shadow: 0 18px 48px rgba(42, 66, 50, 0.12);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(46, 125, 79, 0.06) 1px, transparent 1px),
+        linear-gradient(rgba(46, 125, 79, 0.05) 1px, transparent 1px),
+        var(--bg);
+      background-size: 36px 36px;
+      font-family: "Microsoft YaHei", "Noto Sans SC", sans-serif;
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 248px minmax(0, 1fr);
+    }
+
+    .sidebar {
+      background: #16271d;
+      color: #ecf5ea;
+      padding: 22px 18px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 4px 22px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: #d7ead0;
+      color: var(--green-dark);
+      flex: 0 0 auto;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.25;
+      font-weight: 800;
+    }
+
+    .brand span {
+      display: block;
+      margin-top: 2px;
+      font-size: 11px;
+      color: #a9b8ad;
+      font-weight: 500;
+    }
+
+    .nav-section {
+      margin-top: 22px;
+    }
+
+    .nav-title {
+      margin: 0 0 8px 8px;
+      color: #8ea093;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .nav-item {
+      width: 100%;
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 0;
+      border-radius: 8px;
+      color: #dce8de;
+      background: transparent;
+      padding: 10px 11px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .nav-item:hover,
+    .nav-item.active {
+      background: #244231;
+      color: #ffffff;
+    }
+
+    .nav-item svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .main {
+      padding: 24px;
+      min-width: 0;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .page-title h2 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.2;
+    }
+
+    .page-title p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .search,
+    .select {
+      height: 40px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      border-radius: 8px;
+      color: var(--ink);
+    }
+
+    .search {
+      width: 240px;
+      padding: 0 13px;
+    }
+
+    .select {
+      padding: 0 10px;
+    }
+
+    .icon-button,
+    .primary-button {
+      height: 40px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .icon-button {
+      width: 40px;
+      background: var(--surface);
+      border-color: var(--line);
+      color: var(--green-dark);
+    }
+
+    .primary-button {
+      padding: 0 15px;
+      color: #fff;
+      background: var(--green-dark);
+    }
+
+    .primary-button svg,
+    .icon-button svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .overview {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .overview-media {
+      min-height: 230px;
+      background:
+        linear-gradient(90deg, rgba(16, 39, 27, 0.86), rgba(16, 39, 27, 0.36)),
+        url("https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1500&q=80") center/cover;
+      padding: 24px;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 30px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero-copy h3 {
+      max-width: 620px;
+      margin: 0;
+      font-size: 34px;
+      line-height: 1.16;
+    }
+
+    .hero-copy p {
+      max-width: 620px;
+      margin: 10px 0 0;
+      color: #dcebdd;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .metric-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-top: 1px solid var(--line);
+    }
+
+    .metric {
+      padding: 16px;
+      border-right: 1px solid var(--line);
+    }
+
+    .metric:last-child {
+      border-right: 0;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 7px;
+      font-size: 24px;
+    }
+
+    .diagnosis-panel {
+      background: #fbf8ef;
+      border: 1px solid #e5d9b9;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .panel-head h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .panel-head p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .score-ring {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      background: conic-gradient(var(--green) 0 86%, #e9dfc2 86% 100%);
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+    }
+
+    .score-ring span {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #fbf8ef;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      color: var(--green-dark);
+    }
+
+    .diagnosis-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .diagnosis-item {
+      display: grid;
+      grid-template-columns: 36px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.66);
+      border: 1px solid #eadfbd;
+      border-radius: 8px;
+    }
+
+    .diagnosis-item i {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: #e6f0df;
+      color: var(--green-dark);
+    }
+
+    .diagnosis-item strong {
+      display: block;
+      font-size: 14px;
+    }
+
+    .diagnosis-item span {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .confidence {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--green-dark);
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 12px 36px rgba(42, 66, 50, 0.08);
+      padding: 18px;
+      min-width: 0;
+    }
+
+    .tabs {
+      display: inline-flex;
+      padding: 3px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f6f8f3;
+    }
+
+    .tab {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 6px;
+      min-height: 32px;
+      padding: 0 12px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .tab.active {
+      color: #fff;
+      background: var(--green-dark);
+    }
+
+    .trace-timeline {
+      margin-top: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .trace-step {
+      display: grid;
+      grid-template-columns: 32px 1fr auto;
+      gap: 12px;
+      align-items: start;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcf8;
+    }
+
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: var(--surface-soft);
+      color: var(--green-dark);
+      font-weight: 900;
+    }
+
+    .trace-step h4 {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .trace-step p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .hash {
+      color: var(--teal);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .chart {
+      margin-top: 14px;
+      height: 236px;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+      align-items: end;
+      padding: 16px 8px 4px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcf8;
+    }
+
+    .bar {
+      min-width: 0;
+      display: grid;
+      gap: 8px;
+      align-items: end;
+      justify-items: center;
+      height: 100%;
+    }
+
+    .bar-track {
+      width: 100%;
+      max-width: 34px;
+      height: var(--h);
+      min-height: 30px;
+      border-radius: 6px 6px 2px 2px;
+      background: linear-gradient(180deg, #5aa875, #256f44);
+      position: relative;
+    }
+
+    .bar-track::before {
+      content: attr(data-value);
+      position: absolute;
+      top: -24px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: var(--green-dark);
+      font-weight: 800;
+    }
+
+    .bar span {
+      color: var(--muted);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .module-grid {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .module {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      min-height: 156px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .module:hover {
+      border-color: #b9d2b1;
+      transform: translateY(-2px);
+      transition: transform 160ms ease, border-color 160ms ease;
+    }
+
+    .module-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      color: var(--green-dark);
+      background: var(--surface-soft);
+    }
+
+    .module h3 {
+      margin: 13px 0 6px;
+      font-size: 16px;
+    }
+
+    .module p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .module footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 16px;
+      color: var(--green-dark);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .table-wrap {
+      margin-top: 14px;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 620px;
+      background: #fff;
+    }
+
+    th,
+    td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    th {
+      color: var(--muted);
+      background: #f6f8f3;
+      font-size: 12px;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .badge {
+      display: inline-flex;
+      min-height: 24px;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .badge.good {
+      background: #e4f2e5;
+      color: var(--green-dark);
+    }
+
+    .badge.warn {
+      background: #fff1cf;
+      color: #865e13;
+    }
+
+    .badge.risk {
+      background: #f8e1dc;
+      color: var(--red);
+    }
+
+    .recommend-list {
+      margin-top: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .recommend-item {
+      display: grid;
+      grid-template-columns: 42px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fbfcf8;
+    }
+
+    .rank {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: #e7efe1;
+      color: var(--green-dark);
+      font-weight: 900;
+    }
+
+    .recommend-item strong {
+      display: block;
+      font-size: 14px;
+    }
+
+    .recommend-item span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .score {
+      color: var(--gold);
+      font-weight: 900;
+    }
+
+    @media (max-width: 1080px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+        height: auto;
+      }
+
+      .nav-section {
+        display: none;
+      }
+
+      .hero-grid,
+      .section-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .module-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 680px) {
+      .main {
+        padding: 16px;
+      }
+
+      .topbar,
+      .panel-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .search {
+        width: 100%;
+      }
+
+      .toolbar {
+        width: 100%;
+      }
+
+      .metric-strip,
+      .module-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .metric {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .metric:last-child {
+        border-bottom: 0;
+      }
+
+      .hero-copy h3 {
+        font-size: 26px;
+      }
+
+      .trace-step,
+      .diagnosis-item,
+      .recommend-item {
+        grid-template-columns: 1fr;
+      }
+
+      .hash,
+      .confidence,
+      .score {
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="主导航">
+      <div class="brand">
+        <div class="brand-mark"><i data-lucide="sprout"></i></div>
+        <div>
+          <h1>智慧农业平台</h1>
+          <span>Agri Service Console</span>
+        </div>
+      </div>
+
+      <nav class="nav-section">
+        <p class="nav-title">工作台</p>
+        <button class="nav-item active" type="button"><i data-lucide="layout-dashboard"></i>综合看板</button>
+        <button class="nav-item" type="button"><i data-lucide="tractor"></i>农场管理</button>
+        <button class="nav-item" type="button"><i data-lucide="route"></i>产品溯源</button>
+        <button class="nav-item" type="button"><i data-lucide="book-open"></i>农技知识</button>
+        <button class="nav-item" type="button"><i data-lucide="scan-search"></i>智能诊断</button>
+        <button class="nav-item" type="button"><i data-lucide="user-cog"></i>系统管理</button>
+      </nav>
+
+      <nav class="nav-section">
+        <p class="nav-title">快捷入口</p>
+        <button class="nav-item" type="button"><i data-lucide="upload-cloud"></i>上传识别图片</button>
+        <button class="nav-item" type="button"><i data-lucide="qr-code"></i>生成溯源码</button>
+        <button class="nav-item" type="button"><i data-lucide="file-plus-2"></i>发布农技文章</button>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="page-title">
+          <h2>综合业务看板</h2>
+          <p>集中展示农场生产、全链路溯源、智能诊断和农技推荐的运行状态。</p>
+        </div>
+        <div class="toolbar" aria-label="页面工具">
+          <input class="search" type="search" placeholder="搜索批次号、农场、文章" />
+          <select class="select" aria-label="选择统计周期">
+            <option>本周</option>
+            <option>本月</option>
+            <option>本季度</option>
+          </select>
+          <button class="icon-button" type="button" aria-label="刷新数据"><i data-lucide="refresh-cw"></i></button>
+          <button class="primary-button" type="button"><i data-lucide="download"></i>导出报告</button>
+        </div>
+      </header>
+
+      <section class="hero-grid" aria-label="项目概览">
+        <div class="overview">
+          <div class="overview-media">
+            <div class="status-row">
+              <span class="pill"><i data-lucide="shield-check"></i>系统运行正常</span>
+              <span class="pill"><i data-lucide="clock-3"></i>更新于 18:30</span>
+            </div>
+            <div class="hero-copy">
+              <h3>从地块、批次到知识服务的一体化农业管理平台</h3>
+              <p>平台打通农场生产数据、农产品溯源链、农技内容和智能病虫害诊断，帮助管理员快速掌握业务状态。</p>
+            </div>
+          </div>
+          <div class="metric-strip">
+            <div class="metric"><span>接入农场</span><strong>36</strong></div>
+            <div class="metric"><span>溯源批次</span><strong>1,284</strong></div>
+            <div class="metric"><span>知识文档</span><strong>642</strong></div>
+            <div class="metric"><span>识别准确率</span><strong>91.6%</strong></div>
+          </div>
+        </div>
+
+        <aside class="diagnosis-panel" aria-label="智能诊断摘要">
+          <div class="panel-head">
+            <div>
+              <h3>智能诊断</h3>
+              <p>YOLO 识别 + Agent 建议</p>
+            </div>
+            <div class="score-ring"><span>86%</span></div>
+          </div>
+          <div class="diagnosis-list">
+            <div class="diagnosis-item">
+              <i data-lucide="leaf"></i>
+              <div>
+                <strong>番茄叶霉病</strong>
+                <span>建议通风降湿，及时清理病叶</span>
+              </div>
+              <b class="confidence">0.91</b>
+            </div>
+            <div class="diagnosis-item">
+              <i data-lucide="bug"></i>
+              <div>
+                <strong>水稻稻飞虱风险</strong>
+                <span>虫情指数升高，建议田间复核</span>
+              </div>
+              <b class="confidence">0.78</b>
+            </div>
+            <div class="diagnosis-item">
+              <i data-lucide="message-square-warning"></i>
+              <div>
+                <strong>5 条问题待专家审核</strong>
+                <span>AI 评分低于自动回复阈值</span>
+              </div>
+              <b class="confidence">待审</b>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="module-grid" aria-label="核心模块">
+        <article class="module">
+          <div>
+            <div class="module-icon"><i data-lucide="map-pinned"></i></div>
+            <h3>农场管理</h3>
+            <p>维护企业、地块、作物、设备与环境采集数据。</p>
+          </div>
+          <footer><span>12 个异常点</span><i data-lucide="arrow-right"></i></footer>
+        </article>
+        <article class="module">
+          <div>
+            <div class="module-icon"><i data-lucide="scan-line"></i></div>
+            <h3>产品溯源</h3>
+            <p>串联生产、加工、质检、仓储、物流和销售记录。</p>
+          </div>
+          <footer><span>98.2% 完整率</span><i data-lucide="arrow-right"></i></footer>
+        </article>
+        <article class="module">
+          <div>
+            <div class="module-icon"><i data-lucide="brain-circuit"></i></div>
+            <h3>知识检索</h3>
+            <p>基于文章索引、关键词与文档切片提供 RAG 问答。</p>
+          </div>
+          <footer><span>642 篇已索引</span><i data-lucide="arrow-right"></i></footer>
+        </article>
+        <article class="module">
+          <div>
+            <div class="module-icon"><i data-lucide="sparkles"></i></div>
+            <h3>个性化推荐</h3>
+            <p>根据浏览、点赞、收藏等行为推荐农技内容。</p>
+          </div>
+          <footer><span>24.8% 点击率</span><i data-lucide="arrow-right"></i></footer>
+        </article>
+      </section>
+
+      <section class="section-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3>批次全链路溯源</h3>
+              <p>批次号：BATCH-20260621-018</p>
+            </div>
+            <div class="tabs" aria-label="溯源视图切换">
+              <button class="tab active" type="button">链路</button>
+              <button class="tab" type="button">存证</button>
+            </div>
+          </div>
+          <div class="trace-timeline">
+            <div class="trace-step">
+              <div class="step-dot">1</div>
+              <div>
+                <h4>生产记录</h4>
+                <p>6 号地块完成播种与水肥记录，采集土壤温湿度。</p>
+              </div>
+              <span class="hash">#a81f...42c</span>
+            </div>
+            <div class="trace-step">
+              <div class="step-dot">2</div>
+              <div>
+                <h4>质检记录</h4>
+                <p>农残检测合格，报告已上传并关联批次。</p>
+              </div>
+              <span class="hash">#b32a...91d</span>
+            </div>
+            <div class="trace-step">
+              <div class="step-dot">3</div>
+              <div>
+                <h4>物流记录</h4>
+                <p>冷链运输中，车厢温度保持在 4.8 摄氏度。</p>
+              </div>
+              <span class="hash">#f09c...77e</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3>环境数据趋势</h3>
+              <p>近 7 日地块环境综合评分</p>
+            </div>
+            <span class="badge good">适宜</span>
+          </div>
+          <div class="chart" aria-label="环境数据柱状图">
+            <div class="bar"><div class="bar-track" style="--h: 52%" data-value="72"></div><span>周一</span></div>
+            <div class="bar"><div class="bar-track" style="--h: 68%" data-value="81"></div><span>周二</span></div>
+            <div class="bar"><div class="bar-track" style="--h: 74%" data-value="84"></div><span>周三</span></div>
+            <div class="bar"><div class="bar-track" style="--h: 61%" data-value="77"></div><span>周四</span></div>
+            <div class="bar"><div class="bar-track" style="--h: 82%" data-value="89"></div><span>周五</span></div>
+            <div class="bar"><div class="bar-track" style="--h: 76%" data-value="85"></div><span>周六</span></div>
+            <div class="bar"><div class="bar-track" style="--h: 88%" data-value="92"></div><span>周日</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3>待处理事项</h3>
+              <p>按业务优先级排序</p>
+            </div>
+            <span class="badge warn">7 项</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>事项</th>
+                  <th>模块</th>
+                  <th>负责人</th>
+                  <th>状态</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>智能问答转专家审核</td>
+                  <td>智能诊断</td>
+                  <td>农业专家</td>
+                  <td><span class="badge warn">处理中</span></td>
+                </tr>
+                <tr>
+                  <td>物流温度偏高复核</td>
+                  <td>产品溯源</td>
+                  <td>溯源管理员</td>
+                  <td><span class="badge risk">预警</span></td>
+                </tr>
+                <tr>
+                  <td>水肥设备离线检查</td>
+                  <td>农场管理</td>
+                  <td>农场管理员</td>
+                  <td><span class="badge warn">待确认</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3>推荐内容</h3>
+              <p>基于用户画像与近期行为</p>
+            </div>
+            <span class="badge good">已更新</span>
+          </div>
+          <div class="recommend-list">
+            <div class="recommend-item">
+              <div class="rank">01</div>
+              <div>
+                <strong>设施番茄灰霉病绿色防控技术</strong>
+                <span>标签匹配：番茄、病虫害、防治</span>
+              </div>
+              <b class="score">94.7</b>
+            </div>
+            <div class="recommend-item">
+              <div class="rank">02</div>
+              <div>
+                <strong>水稻中后期田间管理要点</strong>
+                <span>策略：热门内容 + 作物兴趣</span>
+              </div>
+              <b class="score">91.2</b>
+            </div>
+            <div class="recommend-item">
+              <div class="rank">03</div>
+              <div>
+                <strong>冷链运输温湿度异常处置流程</strong>
+                <span>策略：溯源业务关联</span>
+              </div>
+              <b class="score">88.5</b>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    window.addEventListener("DOMContentLoaded", function () {
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+
+      document.querySelectorAll(".tab").forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          document.querySelectorAll(".tab").forEach(function (item) {
+            item.classList.remove("active");
+          });
+          tab.classList.add("active");
+        });
+      });
+    });
+  </script>
+</body>
+</html>

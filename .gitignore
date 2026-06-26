@@ -1,0 +1,76 @@
+# Dependencies
+node_modules/
+**/node_modules/
+.pnp/
+.pnp.*
+
+# Build outputs
+target/
+**/target/
+dist/
+**/dist/
+build/
+**/build/
+out/
+**/out/
+*.class
+*.jar
+*.war
+*.ear
+*.jar.original
+
+# Logs and crash dumps
+*.log
+hs_err_pid*.log
+replay_pid*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime and uploaded files
+runtime/
+**/runtime/
+uploads/
+**/uploads/
+files/
+**/files/
+*.tmp
+*.temp
+*.db
+*.sqlite
+*.sqlite-*
+*.sqlite3
+
+# Large media generated for demos/runtime
+*.mp4
+*.mov
+*.avi
+*.mkv
+
+# Python caches and virtual environments
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# IDE and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Vendored third-party repositories copied into the workspace
+.codex-nested-git-backup/
+ruanjiansheji/agent/
+ruanjiansheji/autogen/
+ruanjiansheji/autogen-magentic-one/
+ruanjiansheji/HUIZHI-nongyeOS-cloud/
+kuangjia/news-please/
