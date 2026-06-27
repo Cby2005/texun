@@ -1,9 +1,23 @@
 <template>
   <div class="dashboard">
-    <div class="page-header">
-      <h2>{{ pageTitle }}</h2>
-      <p>{{ pageSubtitle }}</p>
-    </div>
+    <section class="dashboard-hero" aria-labelledby="dashboard-title">
+      <video
+        class="hero-video"
+        src="/media/strawberry-greenhouse.mp4"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="metadata"
+      >
+        您的浏览器暂不支持视频播放。
+      </video>
+      <div class="hero-shade" aria-hidden="true"></div>
+      <div class="hero-content">
+        <h2 id="dashboard-title">{{ pageTitle }}</h2>
+        <p>{{ pageSubtitle }}</p>
+      </div>
+    </section>
 
     <div class="role-cards">
       <div v-for="card in roleCards" :key="card.title" class="stat-card">
@@ -152,6 +166,25 @@ function landTypeLabel(type) {
 
 <style scoped>
 .dashboard { display: flex; flex-direction: column; gap: 16px; }
+.dashboard-hero {
+  position: relative;
+  min-height: 280px;
+  max-height: 360px;
+  aspect-ratio: 16 / 5;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #17251d;
+}
+.hero-video { width: 100%; height: 100%; display: block; object-fit: cover; }
+.hero-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgba(9, 25, 15, 0.78) 0%, rgba(9, 25, 15, 0.08) 68%);
+  pointer-events: none;
+}
+.hero-content { position: absolute; right: 24px; bottom: 22px; left: 24px; color: #fff; }
+.hero-content h2 { margin: 0; font-size: 26px; line-height: 1.3; }
+.hero-content p { margin: 6px 0 0; line-height: 1.6; }
 .role-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
 .stat-card {
   background: #fff;
@@ -168,4 +201,10 @@ function landTypeLabel(type) {
 .trace-query { max-width: 980px; }
 .query-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
 .trace-summary { margin-top: 16px; }
+
+@media (max-width: 768px) {
+  .dashboard-hero { min-height: 220px; aspect-ratio: 4 / 3; }
+  .hero-content { right: 16px; bottom: 16px; left: 16px; }
+  .hero-content h2 { font-size: 22px; }
+}
 </style>
