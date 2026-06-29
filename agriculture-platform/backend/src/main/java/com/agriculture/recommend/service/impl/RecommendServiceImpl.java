@@ -1,217 +1,442 @@
 package com.agriculture.recommend.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.agriculture.agri.content.entity.AgriContent;
+import com.agriculture.agri.content.mapper.AgriContentMapper;
 import com.agriculture.common.result.PageResult;
-import com.agriculture.knowledge.article.entity.KnowledgeArticle;
-import com.agriculture.knowledge.article.mapper.KnowledgeArticleMapper;
-import com.agriculture.knowledge.article_tag.entity.KnowledgeArticleTag;
-import com.agriculture.knowledge.article_tag.mapper.KnowledgeArticleTagMapper;
-import com.agriculture.knowledge.tag.entity.KnowledgeTag;
-import com.agriculture.knowledge.tag.mapper.KnowledgeTagMapper;
-import com.agriculture.recommend.entity.RecommendLog;
-import com.agriculture.recommend.entity.UserBehavior;
+import com.agriculture.recommend.dto.BehaviorReportDTO;
+import com.agriculture.recommend.entity.UserBehaviorLog;
+import com.agriculture.recommend.entity.UserInterestTag;
 import com.agriculture.recommend.entity.UserProfile;
-import com.agriculture.recommend.mapper.RecommendLogMapper;
-import com.agriculture.recommend.mapper.UserBehaviorMapper;
+import com.agriculture.recommend.mapper.UserBehaviorLogMapper;
+import com.agriculture.recommend.mapper.UserInterestTagMapper;
+import com.agriculture.recommend.mapper.UserProfileMapper;
 import com.agriculture.recommend.service.RecommendService;
-import com.agriculture.recommend.service.UserProfileService;
+import com.agriculture.recommend.vo.ContentRecommendVO;
 import com.agriculture.recommend.vo.RecommendArticleVO;
 import com.agriculture.recommend.vo.RecommendLogVO;
+import com.agriculture.recommend.vo.UserProfileVO;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-import java.time.Duration;
+
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RecommendServiceImpl implements RecommendService {
 
-    private final UserProfileService userProfileService;
-    private final KnowledgeArticleMapper articleMapper;
-    private final KnowledgeArticleTagMapper articleTagMapper;
-    private final KnowledgeTagMapper tagMapper;
-    private final UserBehaviorMapper behaviorMapper;
-    private final RecommendLogMapper recommendLogMapper;
+    private final UserBehaviorLogMapper behaviorLogMapper;
+    private final UserInterestTagMapper interestTagMapper;
+    private final UserProfileMapper userProfileMapper;
+    private final AgriContentMapper agriContentMapper;
+
+    // 行为类型 -> 权重 映射
+    private static final Map<String, Double> BEHAVIOR_WEIGHTS = new ConcurrentHashMap<>();
+    static {
+        BEHAVIOR_WEIGHTS.put("view", 1.0);
+        BEHAVIOR_WEIGHTS.put("click", 2.0);
+        BEHAVIOR_WEIGHTS.put("search", 2.0);
+        BEHAVIOR_WEIGHTS.put("comment", 3.0);
+        BEHAVIOR_WEIGHTS.put("like", 4.0);
+        BEHAVIOR_WEIGHTS.put("collect", 5.0);
+        BEHAVIOR_WEIGHTS.put("play_finish", 5.0);
+    }
+
+    // ==================== 行为上报 ====================
 
     @Override
     @Transactional
-    public List<RecommendArticleVO> recommendArticles(Long userId, Integer limit) {
-        int size = normalizeLimit(limit);
-        UserProfile profile = userProfileService.getOrBuildProfile(userId);
-        Map<String, Double> interests = profile == null ? Collections.emptyMap() : userProfileService.parseInterestTags(profile.getInterestTags());
-        if (interests.isEmpty()) return coldStartRecommend(userId, size);
-
-        List<KnowledgeArticle> candidates = selectCandidates(userId, Math.max(size * 5, 30));
-        List<RecommendArticleVO> result = new ArrayList<>();
-        for (KnowledgeArticle a : candidates) {
-            Map<String, Double> articleTags = getArticleTagWeights(a.getId());
-            double finalScore = 0.35 * calcTagMatch(interests, articleTags)
-                + 0.20 * calcBehaviorSim(userId, articleTags)
-                + 0.15 * calcHot(a) + 0.10 * calcFresh(a) + 0.10 * calcTrust(a) + 0.10 * calcDiversity(a, result);
-            RecommendArticleVO vo = toVO(a, new ArrayList<>(articleTags.keySet()));
-            vo.setScore(round(finalScore));
-            vo.setReason(buildReason(interests, articleTags, a));
-            vo.setStrategy("tag_match");
-            result.add(vo);
+    public void reportBehavior(BehaviorReportDTO dto) {
+        if (dto.getUserId() == null) {
+            log.warn("行为上报缺少userId");
+            return;
         }
-        List<RecommendArticleVO> top = result.stream().sorted(Comparator.comparing(RecommendArticleVO::getScore).reversed())
-            .limit(size).collect(Collectors.toList());
-        saveRecommendLogs(userId, top);
-        return top;
+        String behaviorType = dto.getBehaviorType();
+        Double weight = BEHAVIOR_WEIGHTS.getOrDefault(behaviorType, 1.0);
+
+        // 1. 保存行为日志
+        UserBehaviorLog log = new UserBehaviorLog();
+        log.setUserId(dto.getUserId());
+        log.setContentId(dto.getContentId());
+        log.setBehaviorType(behaviorType);
+        log.setKeyword(dto.getKeyword());
+        log.setDuration(dto.getDuration() != null ? dto.getDuration() : 0);
+        log.setCreateTime(LocalDateTime.now());
+        behaviorLogMapper.insert(log);
+
+        // 2. 如果是搜索行为，直接更新兴趣标签
+        if ("search".equals(behaviorType) && dto.getKeyword() != null && !dto.getKeyword().isBlank()) {
+            updateTagsForSearch(dto.getUserId(), dto.getKeyword(), weight);
+            updateUserProfileActiveTime(dto.getUserId());
+            return;
+        }
+
+        // 3. 如果有关联内容，更新内容统计 + 用户兴趣标签
+        if (dto.getContentId() != null) {
+            updateContentStats(dto.getContentId(), behaviorType);
+            updateInterestTagsFromContent(dto.getUserId(), dto.getContentId(), weight);
+        }
+
+        updateUserProfileActiveTime(dto.getUserId());
+    }
+
+    private void updateContentStats(Long contentId, String behaviorType) {
+        AgriContent content = agriContentMapper.selectById(contentId);
+        if (content == null) return;
+
+        boolean changed = false;
+        switch (behaviorType) {
+            case "view":
+                content.setViewCount((content.getViewCount() == null ? 0 : content.getViewCount()) + 1);
+                changed = true;
+                break;
+            case "like":
+                content.setLikeCount((content.getLikeCount() == null ? 0 : content.getLikeCount()) + 1);
+                changed = true;
+                break;
+            case "collect":
+                content.setCollectCount((content.getCollectCount() == null ? 0 : content.getCollectCount()) + 1);
+                changed = true;
+                break;
+            case "comment":
+                content.setCommentCount((content.getCommentCount() == null ? 0 : content.getCommentCount()) + 1);
+                changed = true;
+                break;
+        }
+        if (changed) {
+            content.setUpdateTime(LocalDateTime.now());
+            agriContentMapper.updateById(content);
+        }
+    }
+
+    private void updateInterestTagsFromContent(Long userId, Long contentId, Double weight) {
+        AgriContent content = agriContentMapper.selectById(contentId);
+        if (content == null) return;
+
+        // 更新分类标签
+        if (content.getCategory() != null && !content.getCategory().isBlank()) {
+            interestTagMapper.increaseWeight(userId, content.getCategory(), "CATEGORY", weight);
+        }
+
+        // 更新内容标签
+        if (content.getTags() != null && !content.getTags().isBlank()) {
+            for (String tag : content.getTags().split(",")) {
+                tag = tag.trim();
+                if (!tag.isEmpty()) {
+                    interestTagMapper.increaseWeight(userId, tag, "TAG", weight);
+                }
+            }
+        }
+    }
+
+    private void updateTagsForSearch(Long userId, String keyword, Double weight) {
+        // 按空格和逗号拆分搜索关键词
+        String[] parts = keyword.split("[,\\s]+");
+        for (String part : parts) {
+            part = part.trim();
+            if (!part.isEmpty()) {
+                interestTagMapper.increaseWeight(userId, part, "KEYWORD", weight);
+            }
+        }
+    }
+
+    private void updateUserProfileActiveTime(Long userId) {
+        UserProfile profile = userProfileMapper.selectOne(
+                new LambdaQueryWrapper<UserProfile>().eq(UserProfile::getUserId, userId));
+        if (profile == null) {
+            profile = new UserProfile();
+            profile.setUserId(userId);
+            profile.setCreateTime(LocalDateTime.now());
+        }
+        profile.setLastActiveTime(LocalDateTime.now());
+        profile.setUpdateTime(LocalDateTime.now());
+        if (profile.getId() == null) {
+            userProfileMapper.insert(profile);
+        } else {
+            userProfileMapper.updateById(profile);
+        }
+    }
+
+    // ==================== 推荐内容 ====================
+
+    @Override
+    public PageResult<ContentRecommendVO> recommendContent(Long userId, Integer pageNum, Integer pageSize) {
+        if (pageNum == null) pageNum = 1;
+        if (pageSize == null) pageSize = 10;
+
+        // 获取用户兴趣标签
+        List<UserInterestTag> userTags = getSortedUserTags(userId);
+
+        // 获取所有已发布内容
+        List<AgriContent> allContent = agriContentMapper.selectList(
+                new LambdaQueryWrapper<AgriContent>()
+                        .eq(AgriContent::getPublishStatus, "PUBLISHED"));
+
+        if (allContent.isEmpty()) {
+            return new PageResult<>(Collections.emptyList(), 0, pageNum, pageSize);
+        }
+
+        List<ContentRecommendVO> scoredList;
+
+        if (userTags.isEmpty()) {
+            // 冷启动：按热度排序，优先温室草莓相关内容
+            scoredList = coldStartRecommend(allContent);
+        } else {
+            // 个性化推荐
+            scoredList = personalizedRecommend(allContent, userTags);
+        }
+
+        // 分页
+        int total = scoredList.size();
+        int fromIndex = (pageNum - 1) * pageSize;
+        if (fromIndex >= total) {
+            return new PageResult<>(Collections.emptyList(), total, pageNum, pageSize);
+        }
+        int toIndex = Math.min(fromIndex + pageSize, total);
+        List<ContentRecommendVO> pageRecords = scoredList.subList(fromIndex, toIndex);
+
+        return new PageResult<>(pageRecords, total, pageNum, pageSize);
+    }
+
+    private List<ContentRecommendVO> coldStartRecommend(List<AgriContent> allContent) {
+        // 冷启动：草莓、温室、病虫害相关的优先，然后按热度评分
+        List<String> defaultKeywords = Arrays.asList("草莓", "温室", "病虫害防治", "草莓种植");
+        return allContent.stream().map(c -> {
+            ContentRecommendVO vo = toVO(c);
+            double tagBoost = 0;
+            String title = c.getTitle() != null ? c.getTitle() : "";
+            String category = c.getCategory() != null ? c.getCategory() : "";
+            String tags = c.getTags() != null ? c.getTags() : "";
+            for (String kw : defaultKeywords) {
+                if (title.contains(kw) || category.contains(kw) || tags.contains(kw)) {
+                    tagBoost += 5;
+                }
+            }
+            double hotScore = calcHotScore(c);
+            double freshScore = calcFreshScore(c.getPublishTime());
+            vo.setRecommendScore(tagBoost * 0.5 + hotScore * 0.4 + freshScore * 0.1);
+            return vo;
+        }).sorted((a, b) -> Double.compare(b.getRecommendScore(), a.getRecommendScore()))
+                .collect(Collectors.toList());
+    }
+
+    private List<ContentRecommendVO> personalizedRecommend(List<AgriContent> allContent,
+                                                            List<UserInterestTag> userTags) {
+        // 构建用户兴趣权重Map
+        Map<String, Double> tagWeightMap = new HashMap<>();
+        Map<String, Double> categoryWeightMap = new HashMap<>();
+        for (UserInterestTag ut : userTags) {
+            if ("TAG".equals(ut.getTagType()) || "KEYWORD".equals(ut.getTagType())) {
+                tagWeightMap.merge(ut.getTagName(), ut.getWeight(), Double::sum);
+            } else if ("CATEGORY".equals(ut.getTagType())) {
+                categoryWeightMap.put(ut.getTagName(), ut.getWeight());
+            }
+        }
+
+        return allContent.stream().map(c -> {
+            ContentRecommendVO vo = toVO(c);
+
+            // 标签匹配分
+            double tagScore = 0;
+            String contentTags = c.getTags() != null ? c.getTags() : "";
+            if (!contentTags.isBlank()) {
+                for (String t : contentTags.split(",")) {
+                    t = t.trim();
+                    if (!t.isEmpty() && tagWeightMap.containsKey(t)) {
+                        tagScore += tagWeightMap.get(t);
+                    }
+                }
+            }
+            // 分类匹配分
+            String category = c.getCategory() != null ? c.getCategory() : "";
+            if (!category.isBlank() && categoryWeightMap.containsKey(category)) {
+                tagScore += categoryWeightMap.get(category) * 0.5;
+            }
+
+            double hotScore = calcHotScore(c);
+            double freshScore = calcFreshScore(c.getPublishTime());
+
+            // 最终推荐分数: tagScore * 0.6 + hotScore * 0.3 + freshScore * 0.1
+            vo.setRecommendScore(tagScore * 0.6 + hotScore * 0.3 + freshScore * 0.1);
+            return vo;
+        }).sorted((a, b) -> Double.compare(b.getRecommendScore(), a.getRecommendScore()))
+                .collect(Collectors.toList());
+    }
+
+    private double calcHotScore(AgriContent c) {
+        double v = (c.getViewCount() == null ? 0 : c.getViewCount()) * 0.01;
+        v += (c.getLikeCount() == null ? 0 : c.getLikeCount()) * 0.5;
+        v += (c.getCollectCount() == null ? 0 : c.getCollectCount()) * 1.0;
+        v += (c.getCommentCount() == null ? 0 : c.getCommentCount()) * 0.3;
+        return v;
+    }
+
+    private double calcFreshScore(LocalDateTime publishTime) {
+        if (publishTime == null) return 1;
+        long days = ChronoUnit.DAYS.between(publishTime, LocalDateTime.now());
+        if (days <= 7) return 10;
+        if (days <= 30) return 6;
+        if (days <= 90) return 3;
+        return 1;
+    }
+
+    private ContentRecommendVO toVO(AgriContent c) {
+        ContentRecommendVO vo = new ContentRecommendVO();
+        vo.setId(c.getId());
+        vo.setTitle(c.getTitle());
+        vo.setContentType(c.getContentType());
+        vo.setCategory(c.getCategory());
+        vo.setCoverUrl(c.getCoverUrl());
+        vo.setSummary(c.getSummary());
+        vo.setVideoUrl(c.getVideoUrl());
+        vo.setVideoDuration(c.getVideoDuration());
+        vo.setAuthor(c.getAuthor());
+        vo.setSource(c.getSource());
+        vo.setViewCount(c.getViewCount());
+        vo.setLikeCount(c.getLikeCount());
+        vo.setCollectCount(c.getCollectCount());
+        vo.setCommentCount(c.getCommentCount());
+        vo.setTags(c.getTags() != null && !c.getTags().isBlank()
+                ? Arrays.asList(c.getTags().split(","))
+                : Collections.emptyList());
+        vo.setPublishTime(c.getPublishTime());
+        vo.setRecommendScore(0.0);
+        return vo;
+    }
+
+    // ==================== 相关技术 ====================
+
+    @Override
+    public List<ContentRecommendVO> similarContent(Long contentId, Integer pageSize) {
+        if (contentId == null) return Collections.emptyList();
+        if (pageSize == null) pageSize = 6;
+
+        AgriContent current = agriContentMapper.selectById(contentId);
+        if (current == null) return Collections.emptyList();
+
+        String currentCategory = current.getCategory();
+        String currentTags = current.getTags() != null ? current.getTags() : "";
+
+        // 获取同分类或同标签的其他内容
+        List<AgriContent> allContent = agriContentMapper.selectList(
+                new LambdaQueryWrapper<AgriContent>()
+                        .eq(AgriContent::getPublishStatus, "PUBLISHED")
+                        .ne(AgriContent::getId, contentId));
+
+        Set<String> currentTagSet = new HashSet<>();
+        if (!currentTags.isBlank()) {
+            for (String t : currentTags.split(",")) {
+                String trimmed = t.trim();
+                if (!trimmed.isEmpty()) currentTagSet.add(trimmed);
+            }
+        }
+
+        List<ContentRecommendVO> result = allContent.stream().map(c -> {
+            ContentRecommendVO vo = toVO(c);
+            double matchScore = 0;
+
+            // 同分类加分
+            if (currentCategory != null && currentCategory.equals(c.getCategory())) {
+                matchScore += 5;
+            }
+
+            // 标签重叠加分
+            String cTags = c.getTags() != null ? c.getTags() : "";
+            if (!cTags.isBlank()) {
+                for (String t : cTags.split(",")) {
+                    if (currentTagSet.contains(t.trim())) {
+                        matchScore += 3;
+                    }
+                }
+            }
+
+            double hotScore = calcHotScore(c);
+            double freshScore = calcFreshScore(c.getPublishTime());
+            vo.setRecommendScore(matchScore * 0.5 + hotScore * 0.3 + freshScore * 0.2);
+            return vo;
+        }).filter(vo -> vo.getRecommendScore() > 0)
+                .sorted((a, b) -> Double.compare(b.getRecommendScore(), a.getRecommendScore()))
+                .limit(pageSize)
+                .collect(Collectors.toList());
+
+        return result;
+    }
+
+    // ==================== 用户画像 ====================
+
+    @Override
+    public UserProfileVO getUserProfile(Long userId) {
+        if (userId == null) return null;
+
+        UserProfileVO vo = new UserProfileVO();
+        vo.setUserId(userId);
+
+        // 获取兴趣标签
+        List<UserInterestTag> tags = getSortedUserTags(userId);
+        if (tags.isEmpty()) {
+            vo.setColdStart(true);
+            vo.setInterestTags(Collections.emptyMap());
+        } else {
+            vo.setColdStart(false);
+            Map<String, Double> tagMap = new LinkedHashMap<>();
+            for (UserInterestTag t : tags) {
+                tagMap.put(t.getTagName() + "[" + t.getTagType() + "]", t.getWeight());
+            }
+            vo.setInterestTags(tagMap);
+        }
+
+        // 获取画像汇总
+        UserProfile profile = userProfileMapper.selectOne(
+                new LambdaQueryWrapper<UserProfile>().eq(UserProfile::getUserId, userId));
+        if (profile != null) {
+            vo.setCropPreference(profile.getCropTags());
+            vo.setProfileText(profile.getProfileText());
+        }
+
+        return vo;
+    }
+
+    private List<UserInterestTag> getSortedUserTags(Long userId) {
+        return interestTagMapper.selectList(
+                new LambdaQueryWrapper<UserInterestTag>()
+                        .eq(UserInterestTag::getUserId, userId)
+                        .orderByDesc(UserInterestTag::getWeight));
+    }
+
+    // ==================== 兼容旧接口 ====================
+
+    @Override
+    public List<RecommendArticleVO> recommendArticles(Long userId, Integer limit) {
+        PageResult<ContentRecommendVO> result = recommendContent(userId, 1, limit != null ? limit : 10);
+        return result.getRecords().stream().map(c -> {
+            RecommendArticleVO vo = new RecommendArticleVO();
+            vo.setArticleId(c.getId());
+            vo.setTitle(c.getTitle());
+            vo.setSummary(c.getSummary());
+            vo.setScore(c.getRecommendScore());
+            vo.setSource(c.getSource());
+            vo.setTags(c.getTags());
+            vo.setPublishedAt(c.getPublishTime());
+            vo.setStrategy("V1");
+            return vo;
+        }).collect(Collectors.toList());
     }
 
     @Override
     public void saveRecommendLogs(Long userId, List<RecommendArticleVO> articles) {
-        if (userId == null || articles == null || articles.isEmpty()) return;
-        articles.forEach(a -> {
-            RecommendLog log = new RecommendLog();
-            log.setUserId(userId); log.setArticleId(a.getArticleId());
-            log.setScore(a.getScore()); log.setReason(a.getReason()); log.setStrategy(a.getStrategy());
-            recommendLogMapper.insert(log);
-        });
+        // 暂不实现，保留接口
     }
 
     @Override
     public PageResult<RecommendLogVO> listLogs(long page, long size, Long userId) {
-        Page<RecommendLog> pg = new Page<>(page, size);
-        LambdaQueryWrapper<RecommendLog> w = new LambdaQueryWrapper<>();
-        if (userId != null) w.eq(RecommendLog::getUserId, userId);
-        w.orderByDesc(RecommendLog::getCreateTime);
-        Page<RecommendLog> logs = recommendLogMapper.selectPage(pg, w);
-        List<Long> aids = logs.getRecords().stream().map(RecommendLog::getArticleId).distinct().collect(Collectors.toList());
-        Map<Long, KnowledgeArticle> am = aids.isEmpty() ? Collections.emptyMap()
-            : articleMapper.selectBatchIds(aids).stream().collect(Collectors.toMap(KnowledgeArticle::getId, a -> a));
-        List<RecommendLogVO> records = logs.getRecords().stream().map(l -> {
-            RecommendLogVO vo = new RecommendLogVO();
-            vo.setId(l.getId()); vo.setUserId(l.getUserId()); vo.setArticleId(l.getArticleId());
-            KnowledgeArticle art = am.get(l.getArticleId());
-            vo.setArticleTitle(art != null ? art.getTitle() : "");
-            vo.setScore(l.getScore()); vo.setReason(l.getReason()); vo.setStrategy(l.getStrategy());
-            vo.setCreateTime(l.getCreateTime());
-            return vo;
-        }).collect(Collectors.toList());
-        return new PageResult<>(records, logs.getTotal(), (int) logs.getCurrent(), (int) logs.getSize());
+        return new PageResult<>(Collections.emptyList(), 0);
     }
-
-    private List<RecommendArticleVO> coldStartRecommend(Long userId, int size) {
-        Set<Long> disliked = getBehaviorIds(userId, "dislike");
-        LambdaQueryWrapper<KnowledgeArticle> w = new LambdaQueryWrapper<KnowledgeArticle>()
-            .eq(KnowledgeArticle::getStatus, "PUBLISHED");
-        if (!disliked.isEmpty()) w.notIn(KnowledgeArticle::getId, disliked);
-        w.orderByDesc(KnowledgeArticle::getPublishedAt).orderByDesc(KnowledgeArticle::getViewCount).last("LIMIT " + size);
-        List<KnowledgeArticle> articles = articleMapper.selectList(w);
-        return articles.stream().map(a -> {
-            RecommendArticleVO vo = toVO(a, Collections.emptyList());
-            vo.setScore(round(0.45 + 0.25 * calcTrust(a) + 0.2 * calcFresh(a) + 0.1 * calcHot(a)));
-            vo.setReason("你当前浏览记录较少，系统优先为你推荐近期热门且经过审核的农技文章。");
-            vo.setStrategy("cold_start");
-            return vo;
-        }).collect(Collectors.toList());
-    }
-
-    private List<KnowledgeArticle> selectCandidates(Long userId, int limit) {
-        Set<Long> disliked = getBehaviorIds(userId, "dislike");
-        Set<Long> viewed = getBehaviorIds(userId, "view");
-        LambdaQueryWrapper<KnowledgeArticle> w = new LambdaQueryWrapper<>();
-        w.eq(KnowledgeArticle::getStatus, "PUBLISHED");
-        if (!disliked.isEmpty()) w.notIn(KnowledgeArticle::getId, disliked);
-        if (!viewed.isEmpty()) w.notIn(KnowledgeArticle::getId, viewed);
-        w.orderByDesc(KnowledgeArticle::getPublishedAt).last("LIMIT " + limit);
-        return articleMapper.selectList(w);
-    }
-
-    private Set<Long> getBehaviorIds(Long userId, String type) {
-        if (userId == null) return Collections.emptySet();
-        return behaviorMapper.selectList(new LambdaQueryWrapper<UserBehavior>()
-            .eq(UserBehavior::getUserId, userId).eq(UserBehavior::getBehaviorType, type))
-            .stream().map(UserBehavior::getArticleId).collect(Collectors.toSet());
-    }
-
-    private Map<String, Double> getArticleTagWeights(Long articleId) {
-        List<KnowledgeArticleTag> rels = articleTagMapper.selectList(
-            new LambdaQueryWrapper<KnowledgeArticleTag>().eq(KnowledgeArticleTag::getArticleId, articleId));
-        if (rels.isEmpty()) return Collections.emptyMap();
-        List<Long> tids = rels.stream().map(KnowledgeArticleTag::getTagId).collect(Collectors.toList());
-        Map<Long, KnowledgeTag> tm = tagMapper.selectBatchIds(tids).stream()
-            .collect(Collectors.toMap(KnowledgeTag::getId, t -> t));
-        Map<String, Double> result = new LinkedHashMap<>();
-        rels.forEach(r -> {
-            KnowledgeTag t = tm.get(r.getTagId());
-            if (t != null) result.put(t.getName(), r.getWeight() != null ? r.getWeight() : 1.0);
-        });
-        return result;
-    }
-
-    private double calcTagMatch(Map<String, Double> interests, Map<String, Double> articleTags) {
-        double total = interests.values().stream().mapToDouble(Double::doubleValue).sum();
-        if (total <= 0 || articleTags.isEmpty()) return 0;
-        double hit = articleTags.keySet().stream().mapToDouble(t -> interests.getOrDefault(t, 0.0)).sum();
-        return clamp(hit / total);
-    }
-
-    private double calcBehaviorSim(Long userId, Map<String, Double> articleTags) {
-        if (userId == null || articleTags.isEmpty()) return 0;
-        List<UserBehavior> behaviors = behaviorMapper.selectList(new LambdaQueryWrapper<UserBehavior>()
-            .eq(UserBehavior::getUserId, userId)
-            .in(UserBehavior::getBehaviorType, List.of("view", "like", "collect", "comment", "question"))
-            .orderByDesc(UserBehavior::getCreateTime).last("LIMIT 30"));
-        if (behaviors.isEmpty()) return 0;
-        int hit = 0;
-        for (UserBehavior b : behaviors) {
-            if (getArticleTagWeights(b.getArticleId()).keySet().stream().anyMatch(articleTags::containsKey)) hit++;
-        }
-        return clamp((double) hit / Math.min(behaviors.size(), 10));
-    }
-
-    private double calcHot(KnowledgeArticle a) {
-        return clamp((safe(a.getViewCount()) * 0.2 + safe(a.getLikeCount()) * 0.3 + safe(a.getFavoriteCount()) * 0.5) / 100.0);
-    }
-
-    private double calcFresh(KnowledgeArticle a) {
-        LocalDateTime t = a.getPublishedAt() != null ? a.getPublishedAt() : a.getCreateTime();
-        if (t == null) return 0.2;
-        long days = Duration.between(t, LocalDateTime.now()).toDays();
-        if (days <= 7) return 1.0; if (days <= 30) return 0.7; if (days <= 90) return 0.4;
-        return 0.2;
-    }
-
-    private double calcTrust(KnowledgeArticle a) {
-        if ("official".equalsIgnoreCase(a.getTrustedLevel())) return 1.0;
-        if ("expert".equalsIgnoreCase(a.getTrustedLevel())) return 0.8;
-        return 0.5;
-    }
-
-    private double calcDiversity(KnowledgeArticle a, List<RecommendArticleVO> selected) {
-        String crop = StringUtils.hasText(a.getCropType()) ? a.getCropType() : "UNKNOWN";
-        long same = selected.stream().filter(v -> Objects.equals(crop, v.getCropType())).count();
-        if (same >= 3) return 0.2; if (same == 2) return 0.5; if (same == 1) return 0.8;
-        return 1.0;
-    }
-
-    private String buildReason(Map<String, Double> interests, Map<String, Double> articleTags, KnowledgeArticle a) {
-        List<String> focus = interests.entrySet().stream()
-            .sorted(Map.Entry.<String, Double>comparingByValue().reversed()).limit(2).map(Map.Entry::getKey).collect(Collectors.toList());
-        List<String> matched = articleTags.keySet().stream().filter(interests::containsKey).limit(3).collect(Collectors.toList());
-        if (matched.isEmpty()) matched = articleTags.keySet().stream().limit(3).collect(Collectors.toList());
-        return "你近期关注了" + String.join("、", focus) + "等内容，该文章涉及"
-            + (matched.isEmpty() ? "农业技术" : String.join("、", matched)) + "，与您的兴趣较匹配。";
-    }
-
-    private RecommendArticleVO toVO(KnowledgeArticle a, List<String> tags) {
-        RecommendArticleVO vo = new RecommendArticleVO();
-        vo.setArticleId(a.getId()); vo.setTitle(a.getTitle()); vo.setSummary(a.getSummary());
-        vo.setTrustedLevel(a.getTrustedLevel()); vo.setSource(a.getSource()); vo.setSourceUrl(a.getSourceUrl());
-        vo.setCropType(a.getCropType()); vo.setTags(tags); vo.setPublishedAt(a.getPublishedAt());
-        return vo;
-    }
-
-    private int normalizeLimit(Integer limit) { return limit == null || limit <= 0 ? 10 : Math.min(limit, 30); }
-    private int safe(Integer v) { return v == null ? 0 : v; }
-    private double clamp(double v) { return Math.max(0, Math.min(1, v)); }
-    private double round(double s) { return Math.round(s * 10000.0) / 10000.0; }
 }

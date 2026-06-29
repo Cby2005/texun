@@ -2,7 +2,7 @@
   <div class="page">
     <div class="page-header"><h2>病虫害智能诊断</h2></div>
     <el-card>
-      <el-alert title="上传农作物病虫害照片，系统将使用YOLOv8模型自动识别病虫害类型" type="info" :closable="false" style="margin-bottom:16px" />
+      <el-alert title="上传草莓叶片、果实或植株照片，系统将使用本地 YOLO11 分割模型识别病虫害" type="info" :closable="false" style="margin-bottom:16px" />
       <div style="display:flex;gap:16px">
         <div style="flex:1">
           <el-upload

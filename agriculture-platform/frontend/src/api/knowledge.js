@@ -22,12 +22,6 @@ export function addCategory(data) { return request.post('/knowledge/categories',
 export function updateCategory(id, data) { return request.put('/knowledge/categories/' + id, data) }
 export function deleteCategory(id) { return request.delete('/knowledge/categories/' + id) }
 
-export function getQuestions(params) { return request.get('/knowledge/questions', { params }) }
-export function getQuestion(id) { return request.get('/knowledge/questions/' + id) }
-export function addQuestion(data) { return request.post('/knowledge/questions', data) }
-export function updateQuestion(id, data) { return request.put('/knowledge/questions/' + id, data) }
-export function deleteQuestion(id) { return request.delete('/knowledge/questions/' + id) }
-
 export function getLectures(params) { return request.get('/knowledge/lectures', { params }) }
 export function getLecture(id) { return request.get('/knowledge/lectures/' + id) }
 export function addLecture(data) { return request.post('/knowledge/lectures', data) }
@@ -46,15 +40,6 @@ export function favoriteVideo(id) { return request.post('/knowledge/videos/' + i
 export function cancelFavoriteVideo(id) { return request.post('/knowledge/videos/' + id + '/cancel-favorite') }
 export function uploadVideo(formData) { return request.post('/knowledge/videos/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120000 }) }
 export function deleteVideo(id) { return request.delete('/knowledge/videos/' + id) }
-
-// 问答互动
-export function getAnswers(questionId) { return request.get('/knowledge/questions/' + questionId + '/answers') }
-export function createAnswer(questionId, data) { return request.post('/knowledge/questions/' + questionId + '/answers', data) }
-export function adoptAnswer(questionId, answerId) { return request.post('/knowledge/questions/' + questionId + '/accept/' + answerId) }
-export function likeQuestion(id) { return request.post('/knowledge/questions/' + id + '/like') }
-export function unlikeQuestion(id) { return request.delete('/knowledge/questions/' + id + '/like') }
-export function favoriteQuestion(id) { return request.post('/knowledge/questions/' + id + '/favorite') }
-export function cancelFavoriteQuestion(id) { return request.post('/knowledge/questions/' + id + '/cancel-favorite') }
 
 // 智能问答
 export function submitSmartQuestion(formData) { return request.post('/question/submit', formData, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 60000 }) }

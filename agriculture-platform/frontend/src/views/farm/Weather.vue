@@ -20,6 +20,7 @@
             查询
           </el-button>
           <el-button :disabled="loading" @click="resetCity">默认城市</el-button>
+          <el-button :disabled="loading" type="success" plain @click="saveDefaultCity">设为默认</el-button>
         </div>
         <div class="city-tabs" aria-label="常用城市">
           <el-button
@@ -174,6 +175,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
+import { getDefaultCity, setDefaultCity } from '@/api/farm'
 
 const AMAP_KEY = import.meta.env.VITE_AMAP_WEATHER_KEY || 'cb2cede86ca293c819cbf9a538d3faa4'
 const AMAP_WEATHER_URL = 'https://restapi.amap.com/v3/weather/weatherInfo'
@@ -195,6 +197,7 @@ const selectedCity = ref('北京')
 const selectedAdcode = ref('110000')
 const loading = ref(false)
 const apiError = ref('')
+const userDefaultCity = ref({ name: '', adcode: '' })
 const liveWeather = ref(null)
 const forecastWeather = ref([])
 const tempChart = ref(null)
@@ -314,7 +317,21 @@ async function selectCity(city) {
 }
 
 function resetCity() {
-  selectCity(cityOptions[0])
+  // 优先使用用户设置的默认城市
+  const saved = userDefaultCity.value
+  if (saved.name && saved.adcode) {
+    selectCity({ name: saved.name, adcode: saved.adcode })
+  } else {
+    selectCity(cityOptions[0])
+  }
+}
+
+async function saveDefaultCity() {
+  try {
+    await setDefaultCity(selectedCity.value, selectedAdcode.value)
+    userDefaultCity.value = { name: selectedCity.value, adcode: selectedAdcode.value }
+    ElMessage.success(`已将「${selectedCity.value}」设为默认城市`)
+  } catch { ElMessage.error('保存默认城市失败') }
 }
 
 async function resolveAdcode(keyword) {
@@ -481,6 +498,16 @@ watch(forecastList, async () => {
 onMounted(async () => {
   await nextTick()
   renderCharts()
+  // 加载用户默认城市
+  try {
+    const res = await getDefaultCity()
+    if (res.data?.city && res.data?.adcode) {
+      userDefaultCity.value = { name: res.data.city, adcode: res.data.adcode }
+      selectedCity.value = res.data.city
+      selectedAdcode.value = res.data.adcode
+      cityKeyword.value = res.data.city
+    }
+  } catch { /* 未设置或未登录则使用默认北京 */ }
   await fetchWeather(selectedAdcode.value)
   resizeHandler = () => {
     tempChartInstance?.resize()

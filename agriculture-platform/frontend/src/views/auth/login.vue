@@ -1,5 +1,6 @@
 <template>
   <div class="login-page">
+    <canvas ref="particleCanvas" class="particle-canvas" aria-hidden="true"></canvas>
     <div class="login-card">
       <div class="login-left">
         <div class="brand">
@@ -29,7 +30,7 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../store'
 import { login } from '../../api/system'
@@ -39,6 +40,76 @@ const router = useRouter()
 const store = useUserStore()
 const loading = ref(false)
 const form = reactive({ username: '', password: '' })
+const particleCanvas = ref(null)
+let animationId
+let resizeParticles
+
+function startParticles() {
+  const canvas = particleCanvas.value
+  const context = canvas?.getContext('2d')
+  if (!context) return
+  const particles = []
+  let width = 0
+  let height = 0
+
+  resizeParticles = () => {
+    width = canvas.clientWidth
+    height = canvas.clientHeight
+    const ratio = Math.min(window.devicePixelRatio || 1, 2)
+    canvas.width = Math.round(width * ratio)
+    canvas.height = Math.round(height * ratio)
+    context.setTransform(ratio, 0, 0, ratio, 0, 0)
+    particles.length = 0
+    const count = Math.min(80, Math.floor(width * height / 15000))
+    for (let index = 0; index < count; index++) {
+      particles.push({
+        x: Math.random() * width, y: Math.random() * height,
+        radius: Math.random() * 2 + 1,
+        vx: (Math.random() - 0.5) * 0.5, vy: (Math.random() - 0.5) * 0.5,
+        alpha: Math.random() * 0.5 + 0.2, pulse: Math.random() * Math.PI * 2
+      })
+    }
+  }
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const draw = () => {
+    context.clearRect(0, 0, width, height)
+    particles.forEach((particle, index) => {
+      if (!reduceMotion) {
+        particle.x = (particle.x + particle.vx + width) % width
+        particle.y = (particle.y + particle.vy + height) % height
+        particle.pulse += 0.02
+      }
+      context.beginPath()
+      context.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2)
+      context.fillStyle = `rgba(34, 197, 94, ${particle.alpha + Math.sin(particle.pulse) * 0.15})`
+      context.fill()
+      for (let next = index + 1; next < particles.length; next++) {
+        const target = particles[next]
+        const distance = Math.hypot(particle.x - target.x, particle.y - target.y)
+        if (distance < 120) {
+          context.beginPath()
+          context.moveTo(particle.x, particle.y)
+          context.lineTo(target.x, target.y)
+          context.strokeStyle = `rgba(34, 197, 94, ${0.12 * (1 - distance / 120)})`
+          context.lineWidth = 0.5
+          context.stroke()
+        }
+      }
+    })
+    if (!reduceMotion) animationId = requestAnimationFrame(draw)
+  }
+
+  resizeParticles()
+  window.addEventListener('resize', resizeParticles)
+  draw()
+}
+
+onMounted(startParticles)
+onBeforeUnmount(() => {
+  if (animationId) cancelAnimationFrame(animationId)
+  if (resizeParticles) window.removeEventListener('resize', resizeParticles)
+})
 
 async function handleLogin() {
   if (!form.username || !form.password) { ElMessage.warning('请输入用户名和密码'); return }
@@ -54,8 +125,9 @@ async function handleLogin() {
 </script>
 
 <style scoped lang="scss">
-.login-page { min-height:100vh; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#E8F5E9,#C8E6C9); }
-.login-card { display:flex; width:900px; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 8px 40px rgba(0,0,0,0.12); }
+.login-page { min-height:100vh; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; background:linear-gradient(135deg,#E8F5E9,#C8E6C9); }
+.particle-canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.login-card { display:flex; position:relative; width:min(900px,calc(100% - 32px)); background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 8px 40px rgba(0,0,0,0.12); }
 .login-left { flex:1; padding:48px 40px; }
 .login-left .brand { display:flex; align-items:center; gap:12px; margin-bottom:32px; h1{font-size:20px;color:#333} p{font-size:12px;color:#999} }
 .login-left h2 { font-size:28px; margin-bottom:8px; }
@@ -66,4 +138,9 @@ async function handleLogin() {
 .login-right p { font-size:14px; opacity:0.85; margin-bottom:32px; line-height:1.6; }
 .features { display:flex; gap:24px; }
 .feat { display:flex; flex-direction:column; align-items:center; gap:8px; font-size:12px; }
+@media (max-width: 720px) {
+  .login-card { max-width:440px; }
+  .login-left { padding:32px 24px; }
+  .login-right { display:none; }
+}
 </style>

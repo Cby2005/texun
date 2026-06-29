@@ -67,11 +67,20 @@ const menuData = [
   { title: '草莓基地', icon: 'Grid', children: [
     { title: '基地管理', path: '/farm/enterprises', icon: 'OfficeBuilding', roles: ['ADMIN','FARM_ADMIN'] },
     { title: '温室地块', path: '/farm/lands', icon: 'Grid', roles: ['ADMIN','FARM_ADMIN'] },
-    { title: '作物管理', path: '/farm/crops', icon: 'Apple', roles: ['ADMIN','FARM_ADMIN','FARMER'] },
     { title: '设备管理', path: '/farm/devices', icon: 'Cpu', roles: ['ADMIN','FARM_ADMIN'] },
     { title: '环境监测', path: '/farm/env', icon: 'DataLine', roles: ['ADMIN','FARM_ADMIN','FARMER'] },
     { title: '天气预测', path: '/farm/weather', icon: 'PartlyCloudy', roles: ['ADMIN','FARM_ADMIN','FARMER'] },
-    { title: '产量预测', path: '/farm/yield', icon: 'TrendCharts', roles: ['ADMIN','FARM_ADMIN','FARMER'] }
+    { title: '草莓产量预测', path: '/farm/yield', icon: 'TrendCharts', roles: ['ADMIN','FARM_ADMIN','FARMER'] }
+  ]},
+  { title: '无人机巡检', icon: 'Promotion', children: [
+    { title: '无人机设备管理', path: '/drone/device', icon: 'Platform', roles: ['ADMIN','FARM_ADMIN','FARMER'] },
+    { title: '温室巡检点管理', path: '/drone/point', icon: 'Location', roles: ['ADMIN','FARM_ADMIN','FARMER'] },
+    { title: '巡检路径规划', path: '/drone/route', icon: 'Guide', roles: ['ADMIN','FARM_ADMIN','FARMER'] },
+    { title: '巡检任务管理', path: '/drone/task', icon: 'List', roles: ['ADMIN','FARM_ADMIN','FARMER'] },
+    { title: '巡检图像记录', path: '/drone/image', icon: 'Picture', roles: ['ADMIN','FARM_ADMIN','FARMER'] },
+    { title: '巡检报告管理', path: '/drone/report', icon: 'Document', roles: ['ADMIN','FARM_ADMIN','FARMER'] },
+    { title: '路径可视化', path: '/drone/routeMap', icon: 'MapLocation', roles: ['ADMIN','FARM_ADMIN','FARMER'] },
+    { title: '数字孪生巡检', path: '/drone/greenhouse-simulation', icon: 'Monitor', roles: ['ADMIN','FARM_ADMIN','FARMER'] }
   ]},
   { title: '溯源管理', icon: 'Goods', children: [
     { title: '草莓产品', path: '/trace/products', icon: 'ShoppingBag', roles: ['ADMIN','TRACE_ADMIN'] },
@@ -86,11 +95,9 @@ const menuData = [
     { title: '公开溯源', path: '/trace/public', icon: 'Search', roles: ['CONSUMER'] }
   ]},
   { title: '技术推广', icon: 'Reading', children: [
-    { title: '草莓文章', path: '/knowledge/articles', icon: 'Document', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
-    { title: '问答社区', path: '/knowledge/questions', icon: 'ChatDotRound', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
+    { title: '农技内容中心', path: '/agri/content', icon: 'Reading', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
     { title: '智能提问', path: '/knowledge/smart-question', icon: 'MagicStick', roles: ['ADMIN','FARM_ADMIN','FARMER'] },
     { title: '农技讲座', path: '/knowledge/lectures', icon: 'VideoCamera', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
-    { title: '农技视频', path: '/knowledge/videos', icon: 'Film', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
     { title: '草莓病虫害', path: '/knowledge/pests', icon: 'Warning', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
     { title: '知识图谱', path: '/knowledge/graph', icon: 'Share', roles: ['ADMIN','FARM_ADMIN','EXPERT','FARMER'] },
     { title: '技术分类', path: '/knowledge/categories', icon: 'Folder', roles: ['ADMIN'] }

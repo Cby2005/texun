@@ -1,0 +1,29 @@
+-- greenhouse_area 表 - 温室分区
+CREATE TABLE IF NOT EXISTS greenhouse_area (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    greenhouse_id BIGINT NOT NULL DEFAULT 1 COMMENT '温室ID',
+    area_name VARCHAR(100) COMMENT '分区名称',
+    row_count INT DEFAULT 4 COMMENT '种植行数',
+    plant_count_per_row INT DEFAULT 10 COMMENT '每行株数',
+    scene_x DECIMAL(10,2) DEFAULT 0 COMMENT 'Three.js场景X坐标',
+    scene_z DECIMAL(10,2) DEFAULT 0 COMMENT 'Three.js场景Z坐标',
+    scene_width DECIMAL(10,2) DEFAULT 4 COMMENT '分区宽度',
+    scene_depth DECIMAL(10,2) DEFAULT 6 COMMENT '分区深度',
+    status VARCHAR(20) DEFAULT 'NORMAL' COMMENT '分区状态 NORMAL/WARNING/ABNORMAL',
+    disease_risk VARCHAR(10) DEFAULT 'LOW' COMMENT '病害风险 LOW/MEDIUM/HIGH',
+    remark VARCHAR(255) COMMENT '备注',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted INT DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='温室分区';
+
+-- 扩展 drone_inspection_point 表
+ALTER TABLE drone_inspection_point
+    ADD COLUMN IF NOT EXISTS area_id BIGINT COMMENT '所属分区ID',
+    ADD COLUMN IF NOT EXISTS scene_x DECIMAL(10,2) COMMENT '场景X坐标',
+    ADD COLUMN IF NOT EXISTS scene_y DECIMAL(10,2) DEFAULT 3.5 COMMENT '场景Y坐标(飞行高度)',
+    ADD COLUMN IF NOT EXISTS scene_z DECIMAL(10,2) COMMENT '场景Z坐标',
+    ADD COLUMN IF NOT EXISTS row_index INT COMMENT '所属种植行',
+    ADD COLUMN IF NOT EXISTS point_index INT COMMENT '行内巡检点序号',
+    ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'NORMAL' COMMENT '巡检点状态',
+    ADD COLUMN IF NOT EXISTS source_type VARCHAR(20) DEFAULT 'MANUAL' COMMENT '来源 AUTO/MANUAL';

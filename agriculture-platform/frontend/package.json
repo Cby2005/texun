@@ -9,11 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@amap/amap-jsapi-loader": "^1.0.1",
     "axios": "^1.7.2",
     "bcryptjs": "^3.0.3",
     "echarts": "^5.5.0",
     "element-plus": "^2.7.3",
     "pinia": "^2.1.7",
+    "three": "^0.185.0",
     "vue": "^3.4.27",
     "vue-router": "^4.3.2"
   },

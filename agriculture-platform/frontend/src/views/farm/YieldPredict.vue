@@ -1,52 +1,115 @@
 <template>
-  <div class="page">
-    <div class="page-header"><h2>产量预测</h2><p>基于环境数据和历史趋势的农作物产量智能预测</p></div>
+  <div class="yield-page">
+    <header class="page-header">
+      <div>
+        <h2>草莓产量预测</h2>
+        <p>基于全国省级草莓历史产量的近期趋势预测</p>
+      </div>
+      <el-tag type="success" effect="plain">数据截至 {{ lastActualYear }} 年</el-tag>
+    </header>
 
-    <el-row :gutter="16" style="margin-bottom:16px">
-      <el-col :span="6">
-        <el-select v-model="predictCrop" placeholder="选择作物" @change="calcPredict">
-          <el-option label="水稻" value="水稻" /><el-option label="小麦" value="小麦" />
-          <el-option label="玉米" value="玉米" /><el-option label="大豆" value="大豆" />
-          <el-option label="番茄" value="番茄" />
+    <section class="control-band">
+      <div class="field">
+        <span>预测地区</span>
+        <el-select v-model="selectedRegion" filterable @change="refresh">
+          <el-option v-for="region in regionOptions" :key="region" :label="region" :value="region" />
         </el-select>
-      </el-col>
-      <el-col :span="6">
-        <el-select v-model="predictYear" placeholder="选择年份" @change="calcPredict">
-          <el-option label="2026年" :value="2026" /><el-option label="2025年" :value="2025" />
-          <el-option label="2024年" :value="2024" />
-        </el-select>
-      </el-col>
-      <el-col :span="4"><el-button type="primary" @click="calcPredict"><el-icon><DataAnalysis /></el-icon> 分析</el-button></el-col>
-    </el-row>
+      </div>
+      <div class="field">
+        <span>预测年份</span>
+        <el-segmented v-model="selectedYear" :options="forecastYears" @change="refresh" />
+      </div>
+      <div class="source-note">
+        <span>数据来源</span>
+        <strong>{{ dataset.source }}</strong>
+      </div>
+    </section>
 
-    <!-- 产量预测卡片 -->
-    <el-row :gutter="16" v-if="predicted">
-      <el-col :span="6"><el-card class="stat-card"><div class="stat-label">预测亩产量</div><div class="stat-value primary">{{ predictData.yield }} <small>kg/亩</small></div></el-card></el-col>
-      <el-col :span="6"><el-card class="stat-card"><div class="stat-label">同比去年</div><div class="stat-value" :class="predictData.changeRate>=0?'success':'danger'">{{ predictData.changeRate>=0?'+':'' }}{{ predictData.changeRate }}%</div></el-card></el-col>
-      <el-col :span="6"><el-card class="stat-card"><div class="stat-label">适宜度评分</div><div class="stat-value warning">{{ predictData.score }}/100</div></el-card></el-col>
-      <el-col :span="6"><el-card class="stat-card"><div class="stat-label">预测种植面积</div><div class="stat-value">{{ predictData.area }} <small>亩</small></div></el-card></el-col>
-    </el-row>
-
-    <!-- 历年产量趋势 -->
-    <el-card style="margin-top:16px">
-      <template #header>历年产量趋势（{{ predictCrop }}）</template>
-      <div ref="yieldChart" class="chart-lg"></div>
-    </el-card>
-
-    <!-- 影响因素分析 -->
-    <el-row :gutter="16" style="margin-top:16px">
-      <el-col :span="12">
-        <el-card>
-          <template #header>影响因素权重</template>
-          <div ref="factorChart" class="chart-md"></div>
+    <el-row :gutter="14" class="stats-row">
+      <el-col :xs="24" :sm="12" :lg="6">
+        <el-card shadow="never" class="stat-card">
+          <span>预测总产量</span>
+          <strong class="primary">{{ formatNumber(summary.predicted) }}</strong>
+          <small>万吨</small>
         </el-card>
       </el-col>
-      <el-col :span="12">
-        <el-card>
-          <template #header>产量预测建议</template>
-          <el-timeline>
-            <el-timeline-item v-for="(t, i) in suggestions" :key="i" :timestamp="'建议'+(i+1)" placement="top" color="#409eff">
-              <p>{{ t }}</p>
+      <el-col :xs="24" :sm="12" :lg="6">
+        <el-card shadow="never" class="stat-card">
+          <span>较上年变化</span>
+          <strong :class="summary.changeRate >= 0 ? 'positive' : 'negative'">
+            {{ summary.changeRate >= 0 ? '+' : '' }}{{ summary.changeRate.toFixed(1) }}%
+          </strong>
+          <small>{{ selectedYear - 1 }} → {{ selectedYear }}</small>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="12" :lg="6">
+        <el-card shadow="never" class="stat-card">
+          <span>近五年平均</span>
+          <strong>{{ formatNumber(summary.average) }}</strong>
+          <small>万吨</small>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="12" :lg="6">
+        <el-card shadow="never" class="stat-card">
+          <span>趋势拟合度</span>
+          <strong class="warning">{{ summary.rSquared.toFixed(1) }}%</strong>
+          <small>最近五年线性趋势</small>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <el-card shadow="never" class="chart-panel">
+      <template #header>
+        <div class="panel-header">
+          <span>{{ selectedRegion }}草莓产量趋势</span>
+          <div class="legend">
+            <span><i class="actual-dot"></i>历史实际</span>
+            <span><i class="forecast-dot"></i>趋势预测</span>
+          </div>
+        </div>
+      </template>
+      <div ref="yieldChart" class="yield-chart"></div>
+    </el-card>
+
+    <el-row :gutter="14" class="detail-row">
+      <el-col :xs="24" :lg="15">
+        <el-card shadow="never" class="ranking-panel">
+          <template #header>
+            <div class="panel-header">
+              <span>{{ selectedYear }} 年省级草莓产量预测</span>
+              <el-tag size="small" type="info">前 10 名</el-tag>
+            </div>
+          </template>
+          <el-table :data="ranking" size="small" stripe height="350">
+            <el-table-column type="index" label="排名" width="64" align="center" />
+            <el-table-column prop="name" label="地区" min-width="140" />
+            <el-table-column label="预测产量（万吨）" min-width="160" align="right">
+              <template #default="{ row }">{{ formatNumber(row.predicted) }}</template>
+            </el-table-column>
+            <el-table-column label="较上年" min-width="110" align="right">
+              <template #default="{ row }">
+                <span :class="row.changeRate >= 0 ? 'positive-text' : 'negative-text'">
+                  {{ row.changeRate >= 0 ? '+' : '' }}{{ row.changeRate.toFixed(1) }}%
+                </span>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </el-col>
+
+      <el-col :xs="24" :lg="9">
+        <el-card shadow="never" class="insight-panel">
+          <template #header><span>预测判断</span></template>
+          <el-descriptions :column="1" border size="small">
+            <el-descriptions-item label="历史区间">{{ firstActualYear }}–{{ lastActualYear }} 年</el-descriptions-item>
+            <el-descriptions-item label="建模窗口">最近 5 个有效年份</el-descriptions-item>
+            <el-descriptions-item label="年均趋势">
+              {{ summary.slope >= 0 ? '+' : '' }}{{ summary.slope.toFixed(2) }} 万吨/年
+            </el-descriptions-item>
+          </el-descriptions>
+          <el-timeline class="insight-list">
+            <el-timeline-item v-for="item in insights" :key="item" color="#2f7d32">
+              {{ item }}
             </el-timeline-item>
           </el-timeline>
         </el-card>
@@ -56,78 +119,342 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, onUnmounted } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import * as echarts from 'echarts'
+import dataset from '../../data/strawberryYield.json'
 
-const predictCrop = ref('水稻'), predictYear = ref(2026), predicted = ref(false)
-const predictData = ref({ yield: 0, changeRate: 0, score: 0, area: 0 })
-const suggestions = ref([])
-const yieldChart = ref(null), factorChart = ref(null)
-let yCh = null, fCh = null, yResize = null, fResize = null
+const forecastYears = [2023, 2024, 2025, 2026]
+const firstActualYear = dataset.years[0]
+const lastActualYear = dataset.years.at(-1)
+const regionOptions = ['全国', ...dataset.regions.map(item => item.name)]
+const selectedRegion = ref('河南省')
+const selectedYear = ref(2026)
+const yieldChart = ref(null)
+let chart
+let resizeHandler
 
-function calcPredict() {
-  const data = {
-    '水稻': { yield: 628, changeRate: 3.2, score: 82, area: 12500, suggestions: ['加强水稻分蘖期水肥管理，适时晒田控制无效分蘖','关注稻瘟病预警，建议孕穗期前喷施预防药剂','根据墒情监测合理灌溉，保持浅水层3-5cm','增施硅钾肥提高抗倒伏能力'] },
-    '小麦': { yield: 485, changeRate: -1.5, score: 76, area: 9800, suggestions: ['注意春季返青肥追施，促进分蘖成穗','加强条锈病监测与防控','拔节期注意控制群体密度防倒伏','灌浆期保持土壤适宜含水量(60-70%)'] },
-    '玉米': { yield: 720, changeRate: 5.8, score: 88, area: 15000, suggestions: ['推荐密植高产栽培模式亩株数4500-5000','大喇叭口期追施穗肥，增产效果显著','加强玉米螟防治，使用性诱剂或赤眼蜂','适时晚收增加灌浆天数提高千粒重'] },
-    '大豆': { yield: 210, changeRate: 2.1, score: 74, area: 8200, suggestions: ['推荐根瘤菌拌种提高固氮效率','花期遇干旱及时补水','防治大豆食心虫和蚜虫','鼓粒期喷施磷酸二氢钾增粒重'] },
-    '番茄': { yield: 5200, changeRate: 8.5, score: 85, area: 3200, suggestions: ['加强棚内温湿度调控防晚疫病','合理整枝打杈保果实品质','增施有机肥和钙肥防脐腐病','适时采收分批次上市提高商品率'] }
+function valuesForRegion(regionName) {
+  if (regionName !== '全国') {
+    return dataset.regions.find(item => item.name === regionName)?.values.map(value => value ?? 0) || []
   }
-  predictData.value = data[predictCrop.value]
-  suggestions.value = data[predictCrop.value].suggestions
-  predicted.value = true
-  renderCharts()
+  return dataset.years.map((_, index) => dataset.regions.reduce((sum, region) => sum + (region.values[index] ?? 0), 0))
 }
 
-function renderCharts() {
-  if (yieldChart.value) {
-    if (!yCh) { yCh = echarts.init(yieldChart.value); yResize = () => yCh.resize(); window.addEventListener('resize', yResize) }
-    const years = ['2020','2021','2022','2023','2024','2025','2026(预测)']
-    const baseYield = predictCrop.value === '水稻' ? [580,592,605,610,608,615,628] :
-      predictCrop.value === '小麦' ? [450,462,475,478,490,492,485] :
-      predictCrop.value === '玉米' ? [650,665,680,695,702,710,720] :
-      predictCrop.value === '大豆' ? [185,190,195,200,198,206,210] : [4500,4620,4750,4820,4900,5000,5200]
-    yCh.setOption({
-      tooltip: { trigger: 'axis' },
-      xAxis: { type: 'category', data: years }, yAxis: { type: 'value', name: 'kg/亩' },
-      series: [{
-        type: 'bar', data: baseYield.map((v, i) => i === 6 ? { value: v, itemStyle: { color: '#409eff' } } : v),
-        itemStyle: { borderRadius: 6, color: '#67c23a' }, label: { show: true, position: 'top' }
-      }]
-    })
-  }
-  if (factorChart.value) {
-    if (!fCh) { fCh = echarts.init(factorChart.value); fResize = () => fCh.resize(); window.addEventListener('resize', fResize) }
-    fCh.setOption({
-      tooltip: { trigger: 'item' },
-      series: [{
-        type: 'pie', radius: ['45%','70%'], center: ['50%','55%'],
-        label: { formatter: '{b}\n{d}%' },
-        data: [
-          { value: 35, name: '气候条件', itemStyle: { color: '#409eff' } },
-          { value: 25, name: '土壤肥力', itemStyle: { color: '#67c23a' } },
-          { value: 20, name: '品种特性', itemStyle: { color: '#e6a23c' } },
-          { value: 12, name: '管理技术', itemStyle: { color: '#f56c6c' } },
-          { value: 8, name: '病虫害', itemStyle: { color: '#909399' } }
-        ]
-      }]
-    })
+function linearModel(values) {
+  const points = dataset.years
+    .map((year, index) => ({ year, value: values[index] }))
+    .filter(point => Number.isFinite(point.value))
+    .slice(-5)
+  const count = points.length
+  const meanYear = points.reduce((sum, point) => sum + point.year, 0) / count
+  const meanValue = points.reduce((sum, point) => sum + point.value, 0) / count
+  const denominator = points.reduce((sum, point) => sum + (point.year - meanYear) ** 2, 0)
+  const slope = denominator === 0 ? 0 : points.reduce((sum, point) => sum + (point.year - meanYear) * (point.value - meanValue), 0) / denominator
+  const intercept = meanValue - slope * meanYear
+  const totalVariance = points.reduce((sum, point) => sum + (point.value - meanValue) ** 2, 0)
+  const residualVariance = points.reduce((sum, point) => sum + (point.value - (slope * point.year + intercept)) ** 2, 0)
+  const rSquared = totalVariance === 0 ? 1 : Math.max(0, 1 - residualVariance / totalVariance)
+  return {
+    slope,
+    rSquared,
+    predict: year => Math.max(0, slope * year + intercept)
   }
 }
 
-onMounted(async () => { calcPredict(); await nextTick(); renderCharts() })
+function predictionFor(regionName, year) {
+  const values = valuesForRegion(regionName)
+  if (year <= lastActualYear) return values[dataset.years.indexOf(year)] || 0
+  return linearModel(values).predict(year)
+}
+
+const currentValues = computed(() => valuesForRegion(selectedRegion.value))
+const currentModel = computed(() => linearModel(currentValues.value))
+const summary = computed(() => {
+  const predicted = predictionFor(selectedRegion.value, selectedYear.value)
+  const previous = predictionFor(selectedRegion.value, selectedYear.value - 1)
+  const recent = currentValues.value.slice(-5)
+  return {
+    predicted,
+    changeRate: previous ? (predicted - previous) / previous * 100 : 0,
+    average: recent.reduce((sum, value) => sum + value, 0) / recent.length,
+    rSquared: currentModel.value.rSquared * 100,
+    slope: currentModel.value.slope
+  }
+})
+
+const ranking = computed(() => dataset.regions
+  .map(region => {
+    const predicted = predictionFor(region.name, selectedYear.value)
+    const previous = predictionFor(region.name, selectedYear.value - 1)
+    return {
+      name: region.name,
+      predicted,
+      changeRate: previous ? (predicted - previous) / previous * 100 : 0
+    }
+  })
+  .sort((a, b) => b.predicted - a.predicted)
+  .slice(0, 10))
+
+const insights = computed(() => {
+  const result = []
+  if (summary.value.slope > 0.5) result.push('近五年产量呈明显增长趋势，应同步规划采后分级、冷链与销售承接能力。')
+  else if (summary.value.slope > 0) result.push('近五年产量温和增长，可在保持品质的前提下稳步扩大生产能力。')
+  else result.push('近五年产量趋势偏弱，建议结合种植面积、灾害和市场数据复核下降原因。')
+  if (summary.value.rSquared < 60) result.push('历史波动较大，趋势拟合度偏低，本结果适合辅助研判，不宜作为单一决策依据。')
+  else result.push('近期趋势相对稳定，线性模型能够解释大部分年度变化。')
+  if (selectedYear.value - lastActualYear >= 3) result.push('预测跨度超过两年，不确定性会随时间扩大，获得新年度数据后应及时更新。')
+  return result
+})
+
+function formatNumber(value) {
+  return Number(value || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function refresh() {
+  nextTick(renderChart)
+}
+
+function renderChart() {
+  if (!yieldChart.value) return
+  if (!chart) {
+    chart = echarts.init(yieldChart.value)
+    resizeHandler = () => chart.resize()
+    window.addEventListener('resize', resizeHandler)
+  }
+  const years = [...dataset.years, ...forecastYears]
+  const actual = [...currentValues.value, ...forecastYears.map(() => null)]
+  const forecast = years.map(year => year < lastActualYear ? null : predictionFor(selectedRegion.value, year))
+  forecast[dataset.years.indexOf(lastActualYear)] = currentValues.value.at(-1)
+  chart.setOption({
+    animationDuration: 500,
+    tooltip: {
+      trigger: 'axis',
+      valueFormatter: value => value == null ? '-' : `${formatNumber(value)} 万吨`
+    },
+    grid: { left: 58, right: 24, top: 32, bottom: 44 },
+    xAxis: { type: 'category', data: years, boundaryGap: false, axisLabel: { interval: 1 } },
+    yAxis: { type: 'value', name: '万吨', nameTextStyle: { color: '#6b7280' }, splitLine: { lineStyle: { color: '#edf1ed' } } },
+    series: [
+      {
+        name: '历史实际',
+        type: 'line',
+        data: actual,
+        symbolSize: 6,
+        lineStyle: { width: 3, color: '#2f7d32' },
+        itemStyle: { color: '#2f7d32' },
+        areaStyle: { color: 'rgba(47,125,50,0.10)' }
+      },
+      {
+        name: '趋势预测',
+        type: 'line',
+        data: forecast,
+        symbol: 'diamond',
+        symbolSize: 8,
+        lineStyle: { width: 3, type: 'dashed', color: '#d97706' },
+        itemStyle: { color: '#d97706' }
+      }
+    ]
+  }, true)
+}
+
+onMounted(async () => {
+  await nextTick()
+  renderChart()
+})
+
 onUnmounted(() => {
-  window.removeEventListener('resize', yResize); window.removeEventListener('resize', fResize)
-  yCh?.dispose(); fCh?.dispose()
+  window.removeEventListener('resize', resizeHandler)
+  chart?.dispose()
 })
 </script>
 
 <style scoped>
-.stat-card { text-align: center; }
-.stat-label { font-size: 13px; color: #909399; margin-bottom: 8px; }
-.stat-value { font-size: 28px; font-weight: 700; }
-.stat-value small { font-size: 14px; font-weight: 400; }
-.primary { color: #409eff; } .success { color: #67c23a; } .warning { color: #e6a23c; } .danger { color: #f56c6c; }
-.chart-lg { width: 100%; height: 350px; }
-.chart-md { width: 100%; height: 300px; }
+.yield-page {
+  min-height: calc(100vh - 92px);
+  padding: 4px;
+  color: #263329;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.page-header h2 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: 0;
+}
+
+.page-header p {
+  margin: 5px 0 0;
+  color: #718075;
+  font-size: 13px;
+}
+
+.control-band {
+  display: flex;
+  align-items: end;
+  gap: 24px;
+  padding: 14px 16px;
+  border: 1px solid #dfe8df;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.field,
+.source-note {
+  display: grid;
+  gap: 6px;
+}
+
+.field > span,
+.source-note > span {
+  color: #718075;
+  font-size: 12px;
+}
+
+.field .el-select {
+  width: 190px;
+}
+
+.source-note {
+  margin-left: auto;
+  text-align: right;
+}
+
+.source-note strong {
+  font-size: 13px;
+}
+
+.stats-row {
+  margin-top: 14px;
+}
+
+.stat-card {
+  height: 120px;
+  border-color: #dfe8df;
+}
+
+.stat-card :deep(.el-card__body) {
+  display: grid;
+  align-content: center;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.stat-card span {
+  color: #718075;
+  font-size: 12px;
+}
+
+.stat-card strong {
+  margin-top: 6px;
+  font-size: 27px;
+  line-height: 1.1;
+}
+
+.stat-card small {
+  margin-top: 5px;
+  color: #8b978d;
+}
+
+.primary { color: #256d39; }
+.positive { color: #198754; }
+.negative { color: #c2413b; }
+.warning { color: #b86708; }
+.positive-text { color: #198754; }
+.negative-text { color: #c2413b; }
+
+.chart-panel,
+.ranking-panel,
+.insight-panel {
+  border-color: #dfe8df;
+}
+
+.chart-panel {
+  margin-top: 14px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+}
+
+.legend {
+  display: flex;
+  gap: 14px;
+  color: #718075;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend i {
+  width: 18px;
+  height: 3px;
+}
+
+.actual-dot { background: #2f7d32; }
+.forecast-dot { border-top: 3px dashed #d97706; }
+
+.yield-chart {
+  width: 100%;
+  height: 370px;
+}
+
+.detail-row {
+  margin-top: 14px;
+}
+
+.insight-list {
+  margin-top: 22px;
+}
+
+@media (max-width: 1199px) {
+  .control-band {
+    flex-wrap: wrap;
+    align-items: start;
+  }
+
+  .source-note {
+    width: 100%;
+    margin-left: 0;
+    text-align: left;
+  }
+
+  .stat-card,
+  .insight-panel {
+    margin-bottom: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .page-header {
+    align-items: start;
+    gap: 12px;
+  }
+
+  .control-band {
+    display: grid;
+    gap: 14px;
+  }
+
+  .field .el-select {
+    width: 100%;
+  }
+
+  .yield-chart {
+    height: 320px;
+  }
+}
 </style>

@@ -66,6 +66,10 @@ public class SecurityConfig {
                         // 溯源产品公开查询
                         .requestMatchers(HttpMethod.GET, "/api/trace/products/public/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/trace/chain/public/**").permitAll()
+                        // 推荐系统 GET 公开（内容浏览）
+                        .requestMatchers(HttpMethod.GET, "/api/recommend/content", "/api/recommend/similar").permitAll()
+                        // 农技内容 GET 公开
+                        .requestMatchers(HttpMethod.GET, "/api/agri/content/**").permitAll()
                         // 溯源管理受权限控制（由@PreAuthorize控制）
                         // 文件静态资源
                         .requestMatchers("/files/**", "/videos/**").permitAll()

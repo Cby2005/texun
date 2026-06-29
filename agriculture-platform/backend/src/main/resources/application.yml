@@ -73,8 +73,8 @@ app:
     access-token-expiration: 7200
     refresh-token-expiration: 604800
   file:
-    base-path: ./runtime/files
-    base-url: http://localhost:8080/files
+    base-path: ./uploads
+    base-url: http://localhost:8080/uploads
   upload:
     path: ./runtime/files
     url-prefix: /files
@@ -84,10 +84,21 @@ app:
     confidence-threshold: 0.50
   roboflow:
     api-url: ${ROBOFLOW_API_URL:https://serverless.roboflow.com}
-    api-key: ${ROBOFLOW_API_KEY:HdXYoA0dKYSqizkkXlmq}
+    api-key: ${ROBOFLOW_API_KEY:}
     model-id: ${ROBOFLOW_MODEL_ID:pest-detection-yolov8/1}
   agent:
     diagnosis-url: ${AGENT_SERVICE_URL:http://localhost:8002/diagnose}
+
+# ======================== DeepSeek AI 配置 ========================
+# API Key 优先从环境变量 DEEPSEEK_API_KEY 读取，未设置时使用下方默认值
+# 生产环境请勿将 API Key 提交到 Git
+deepseek:
+  api-key: ${DEEPSEEK_API_KEY:your-api-key-here}
+  base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+  model: ${DEEPSEEK_MODEL:deepseek-chat}
+  timeout: ${DEEPSEEK_TIMEOUT:60}
+  max-tokens: ${DEEPSEEK_MAX_TOKENS:2048}
+  temperature: ${DEEPSEEK_TEMPERATURE:0.7}
 
 logging:
   level:

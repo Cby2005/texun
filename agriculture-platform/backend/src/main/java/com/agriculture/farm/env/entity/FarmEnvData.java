@@ -12,6 +12,7 @@ public class FarmEnvData {
     private Long id;
     private Long enterpriseId;
     private Long landId;
+    @TableField(exist = false)
     private String batchNo;
     private Long deviceId;
     /** 0大棚 1鱼塘 2大田 3仓库 */

@@ -24,13 +24,13 @@
       <el-form :model="dlg.form" label-width="80px">
         <el-form-item label="所属农场">
           <el-select v-model="dlg.form.enterpriseId" style="width:100%">
-            <el-option v-for="e in enterprises" :key="e.id" :value="e.id" :label="e.name" />
+            <el-option v-for="e in enterprises" :key="e.id" :value="e.id" :label="e.baseName||e.name" />
           </el-select>
         </el-form-item>
         <el-form-item label="编号"><el-input-number v-model="dlg.form.number" /></el-form-item>
         <el-form-item label="类型"><el-select v-model="dlg.form.type"><el-option :value="0" label="大棚"/><el-option :value="1" label="鱼塘"/><el-option :value="2" label="大田"/><el-option :value="3" label="仓库"/></el-select></el-form-item>
         <el-form-item label="名称"><el-input v-model="dlg.form.displayName" /></el-form-item>
-        <el-form-item label="面积(㎡)"><el-input v-model="dlg.form.area" /></el-form-item>
+        <el-form-item label="面积(㎡)"><el-input-number v-model="dlg.form.area" :min="0" :precision="2" style="width:100%" /></el-form-item>
         <el-form-item label="位置"><el-input v-model="dlg.form.location" /></el-form-item>
       </el-form>
       <template #footer><el-button @click="dlg.visible=false">取消</el-button><el-button type="primary" @click="handleSave">保存</el-button></template>
@@ -55,7 +55,7 @@ async function load() {
   } catch(e){} finally { loading.value = false }
 }
 
-async function showAdd() { dlg.isEdit = false; dlg.form = { enterpriseId: null, number: 1, type: 0, displayName:'', area:'', location:'' }; dlg.visible = true }
+async function showAdd() { dlg.isEdit = false; dlg.form = { enterpriseId: null, number: 1, type: 0, displayName:'', area:0, location:'' }; dlg.visible = true }
 function showEdit(row) { dlg.isEdit = true; dlg.form = { ...row }; dlg.visible = true }
 
 async function handleSave() {
