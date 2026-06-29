@@ -30,3 +30,7 @@ export function getLatestEnvAll() { return request.get('/farm/env/latest') }
 export function getDashboardStats() { return request.get('/dashboard/stats') }
 export function getEnvSummary() { return request.get('/dashboard/env/summary') }
 export function getRoleDashboard() { return request.get('/dashboard/role') }
+
+// 默认城市设置
+export function getDefaultCity() { return request.get('/profile/default-city') }
+export function setDefaultCity(city, adcode) { return request.put('/profile/default-city', { city, adcode }) }

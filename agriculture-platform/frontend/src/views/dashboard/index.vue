@@ -31,6 +31,18 @@
       </div>
     </div>
 
+    <!-- 无人机数字孪生入口 -->
+    <div class="sim-entry" @click="$router.push('/drone/greenhouse-simulation')">
+      <div class="sim-entry-icon">
+        <el-icon :size="32"><Monitor /></el-icon>
+      </div>
+      <div class="sim-entry-text">
+        <div class="sim-entry-title">温室模拟巡检</div>
+        <div class="sim-entry-desc">点击进入温室草莓数字孪生巡检场景</div>
+      </div>
+      <el-button type="success" round>进入模拟</el-button>
+    </div>
+
     <el-card v-if="store.primaryRole === 'CONSUMER'" class="trace-query">
       <template #header><span>有机草莓公开溯源查询</span></template>
       <div class="query-line">
@@ -60,6 +72,10 @@
         <el-table-column prop="createTime" label="时间" width="180" />
       </el-table>
     </el-card>
+
+    <!-- 草莓市场行情卡片（非消费者角色可见） -->
+    <MarketPriceCard v-if="store.primaryRole !== 'CONSUMER'" />
+
   </div>
 </template>
 
@@ -69,6 +85,7 @@ import { ElMessage } from 'element-plus'
 import { useUserStore } from '../../store'
 import { getDashboardStats, getEnvSummary, getRoleDashboard } from '../../api/farm'
 import { getPublicChainTrace } from '../../api/trace'
+import MarketPriceCard from './components/MarketPriceCard.vue'
 
 const store = useUserStore()
 const stats = ref({})
@@ -201,6 +218,44 @@ function landTypeLabel(type) {
 .trace-query { max-width: 980px; }
 .query-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
 .trace-summary { margin-top: 16px; }
+
+.sim-entry {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  border: 2px dashed #66bb6a;
+  border-radius: 12px;
+  padding: 18px 22px;
+  cursor: pointer;
+  transition: all 0.25s;
+  max-width: 700px;
+}
+.sim-entry:hover {
+  background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%);
+  border-color: #43a047;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.2);
+}
+.sim-entry-icon {
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px;
+  color: #2e7d32;
+}
+.sim-entry-text {
+  flex: 1;
+}
+.sim-entry-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #2e7d32;
+}
+.sim-entry-desc {
+  font-size: 13px;
+  color: #558b2f;
+  margin-top: 2px;
+}
 
 @media (max-width: 768px) {
   .dashboard-hero { min-height: 220px; aspect-ratio: 4 / 3; }

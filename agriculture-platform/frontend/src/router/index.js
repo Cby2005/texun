@@ -18,14 +18,14 @@ const routes = [
       { path: 'system/users', name: 'SysUsers', meta: { title: '用户管理', roles: ['ADMIN'] }, component: () => import('../views/system/user/list.vue') },
       { path: 'system/roles', name: 'SysRoles', meta: { title: '角色管理', roles: ['ADMIN'] }, component: () => import('../views/system/role/list.vue') },
       { path: 'system/menus', name: 'SysMenus', meta: { title: '菜单管理', roles: ['ADMIN'] }, component: () => import('../views/system/menu/list.vue') },
+      { path: 'system/profile-analysis', name: 'ProfileAnalysis', meta: { title: '用户画像分析', roles: ['ADMIN', 'EXPERT'] }, component: () => import('../views/system/profile-analysis.vue') },
 
       { path: 'farm/enterprises', name: 'FarmEnterprises', meta: { title: '草莓基地管理', roles: ['ADMIN', 'FARM_ADMIN'] }, component: () => import('../views/farm/enterprise/list.vue') },
       { path: 'farm/lands', name: 'FarmLands', meta: { title: '温室地块管理', roles: ['ADMIN', 'FARM_ADMIN'] }, component: () => import('../views/farm/land/list.vue') },
-      { path: 'farm/crops', name: 'FarmCrops', meta: { title: '作物管理', roles: farmerRoles }, component: () => import('../views/farm/crop/list.vue') },
       { path: 'farm/devices', name: 'FarmDevices', meta: { title: '设备管理', roles: ['ADMIN', 'FARM_ADMIN'] }, component: () => import('../views/farm/device/list.vue') },
       { path: 'farm/env', name: 'FarmEnv', meta: { title: '环境监测', roles: farmerRoles }, component: () => import('../views/farm/env/index.vue') },
       { path: 'farm/weather', name: 'Weather', meta: { title: '天气预测', roles: farmerRoles }, component: () => import('../views/farm/Weather.vue') },
-      { path: 'farm/yield', name: 'YieldPredict', meta: { title: '产量预测', roles: farmerRoles }, component: () => import('../views/farm/YieldPredict.vue') },
+      { path: 'farm/yield', name: 'YieldPredict', meta: { title: '草莓产量预测', roles: farmerRoles }, component: () => import('../views/farm/YieldPredict.vue') },
 
       { path: 'trace/products', name: 'TraceProducts', meta: { title: '草莓产品管理', roles: ['ADMIN', 'TRACE_ADMIN'] }, component: () => import('../views/trace/product/list.vue') },
       { path: 'trace/batches', name: 'TraceBatches', meta: { title: '草莓批次管理', roles: ['ADMIN', 'FARM_ADMIN', 'TRACE_ADMIN'] }, component: () => import('../views/trace/batch/list.vue') },
@@ -39,13 +39,12 @@ const routes = [
       { path: 'trace/chain', name: 'TraceChain', meta: { title: '草莓全链追溯', roles: ['ADMIN', 'TRACE_ADMIN'] }, component: () => import('../views/trace/chain/index.vue') },
       { path: 'trace/public', name: 'PublicTrace', meta: { title: '公开溯源', roles: ['CONSUMER', 'ADMIN', 'TRACE_ADMIN'] }, component: () => import('../views/trace/public.vue') },
 
-      { path: 'knowledge/articles', name: 'Articles', meta: { title: '草莓农技文章', roles: knowledgeRoles }, component: () => import('../views/knowledge/article/list.vue') },
-      { path: 'knowledge/articles/create', name: 'ArticleCreate', meta: { title: '发布文章', roles: ['ADMIN', 'EXPERT'] }, component: () => import('../views/knowledge/article/form.vue') },
-      { path: 'knowledge/articles/:id', name: 'ArticleDetail', meta: { title: '文章详情', roles: knowledgeRoles }, component: () => import('../views/knowledge/article/detail.vue') },
-      { path: 'knowledge/articles/:id/edit', name: 'ArticleEdit', meta: { title: '编辑文章', roles: ['ADMIN', 'EXPERT'] }, component: () => import('../views/knowledge/article/form.vue') },
-      { path: 'knowledge/questions', name: 'Questions', meta: { title: '问答社区', roles: knowledgeRoles }, component: () => import('../views/knowledge/question/list.vue') },
-      { path: 'knowledge/questions/create', name: 'QuestionCreate', meta: { title: '提问', roles: farmerRoles }, component: () => import('../views/diagnosis/SmartSubmit.vue') },
-      { path: 'knowledge/questions/:id', name: 'QuestionDetail', meta: { title: '问题详情', roles: knowledgeRoles }, component: () => import('../views/knowledge/question/detail.vue') },
+      { path: 'agri/content', name: 'AgriContent', meta: { title: '农技内容中心', roles: knowledgeRoles }, component: () => import('../views/agri/content/index.vue') },
+      { path: 'agri/content/:id', name: 'AgriContentDetail', meta: { title: '内容详情', roles: knowledgeRoles }, component: () => import('../views/agri/content/index.vue') },
+      { path: 'knowledge/articles', redirect: '/agri/content?type=ARTICLE' },
+      { path: 'knowledge/articles/:pathMatch(.*)', redirect: to => '/agri/content?type=ARTICLE' },
+      { path: 'knowledge/videos', redirect: '/agri/content' },
+      { path: 'knowledge/videos/:pathMatch(.*)', redirect: '/agri/content' },
       { path: 'knowledge/lectures', name: 'Lectures', meta: { title: '农技讲座', roles: knowledgeRoles }, component: () => import('../views/knowledge/lecture/list.vue') },
       { path: 'knowledge/lectures/create', name: 'LectureCreate', meta: { title: '发布讲座', roles: ['ADMIN', 'EXPERT'] }, component: () => import('../views/knowledge/lecture/form.vue') },
       { path: 'knowledge/lectures/:id', name: 'LectureDetail', meta: { title: '讲座详情', roles: knowledgeRoles }, component: () => import('../views/knowledge/lecture/detail.vue') },
@@ -59,9 +58,30 @@ const routes = [
       { path: 'knowledge/smart-question', name: 'SmartQuestionSubmit', meta: { title: '智能提问', roles: farmerRoles }, component: () => import('../views/diagnosis/SmartSubmit.vue') },
       { path: 'knowledge/questions/:id/smart', name: 'SmartQuestionDetail', meta: { title: '智能诊断详情', roles: knowledgeRoles }, component: () => import('../views/knowledge/question/smartDetail.vue') },
 
+      { path: 'drone/device', name: 'DroneDevice', meta: { title: '无人机设备管理', roles: farmerRoles }, component: () => import('../views/drone/device/index.vue') },
+      { path: 'drone/point', name: 'DronePoint', meta: { title: '温室巡检点管理', roles: farmerRoles }, component: () => import('../views/drone/point/index.vue') },
+      { path: 'drone/route', name: 'DroneRoute', meta: { title: '巡检路径规划', roles: farmerRoles }, component: () => import('../views/drone/route/index.vue') },
+      { path: 'drone/task', name: 'DroneTask', meta: { title: '巡检任务管理', roles: farmerRoles }, component: () => import('../views/drone/task/index.vue') },
+      { path: 'drone/image', name: 'DroneImage', meta: { title: '巡检图像记录', roles: farmerRoles }, component: () => import('../views/drone/image/index.vue') },
+      { path: 'drone/report', name: 'DroneReport', meta: { title: '巡检报告管理', roles: farmerRoles }, component: () => import('../views/drone/report/index.vue') },
+      { path: 'drone/routeMap', name: 'DroneRouteMap', meta: { title: '路径可视化', roles: farmerRoles }, component: () => import('../views/drone/routeMap/index.vue') },
+      { path: 'drone/greenhouse-simulation', name: 'GreenhouseSimulation', meta: { title: '数字孪生巡检', roles: farmerRoles }, component: () => import('../views/drone/greenhouseSimulation/index.vue') },
+
       { path: 'recommend', name: 'Recommend', meta: { title: '个性化推荐', roles: knowledgeRoles }, component: () => import('../views/recommend/list.vue') },
       { path: 'user-profile', name: 'UserProfile', meta: { title: '用户画像', roles: knowledgeRoles }, component: () => import('../views/user/profile.vue') },
-      { path: 'diagnosis', name: 'Diagnosis', meta: { title: '病虫害诊断', roles: farmerRoles }, component: () => import('../views/diagnosis/index.vue') }
+      { path: 'diagnosis', name: 'Diagnosis', meta: { title: '病虫害诊断', roles: farmerRoles }, component: () => import('../views/diagnosis/index.vue') },
+
+      // 讲座测验(专家)
+      { path: 'quiz/manage', name: 'QuizManage', meta: { title: '讲座题目管理', roles: ['ADMIN', 'EXPERT'] }, component: () => import('../views/quiz/QuizManage.vue') },
+      { path: 'quiz/manage/:id', name: 'QuizEdit', meta: { title: '编辑题目', roles: ['ADMIN', 'EXPERT'] }, component: () => import('../views/quiz/QuizEdit.vue') },
+      // 农户答题
+      { path: 'quiz/list', name: 'QuizList', meta: { title: '知识测验', roles: ['ADMIN', 'FARMER'] }, component: () => import('../views/quiz/QuizList.vue') },
+      { path: 'quiz/:id', name: 'QuizTake', meta: { title: '答题', roles: ['ADMIN', 'FARMER'] }, component: () => import('../views/quiz/QuizTake.vue') },
+      // 积分
+      { path: 'points/my', name: 'MyPoints', meta: { title: '我的积分', roles: ['ADMIN', 'FARMER'] }, component: () => import('../views/points/MyPoints.vue') },
+      // 积分商城
+      { path: 'points/mall', name: 'PointsMall', meta: { title: '积分商城', roles: ['ADMIN', 'FARMER'] }, component: () => import('../views/points/PointsMall.vue') },
+      { path: 'points/mall/admin', name: 'MallAdmin', meta: { title: '商城管理', roles: ['ADMIN'] }, component: () => import('../views/points/MallAdmin.vue') }
     ]
   }
 ]

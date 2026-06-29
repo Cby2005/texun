@@ -50,6 +50,9 @@ public class YoloServiceImpl implements YoloService {
     @Value("${app.yolo.service-url:http://localhost:8001/detect}")
     private String yoloUrl;
 
+    @Value("${app.yolo.confidence-threshold:0.50}")
+    private double confidenceThreshold;
+
     @Value("${app.roboflow.api-url:https://serverless.roboflow.com}")
     private String roboflowApiUrl;
 
@@ -110,6 +113,7 @@ public class YoloServiceImpl implements YoloService {
 
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("file", new MultipartResource(file));
+            body.add("conf", confidenceThreshold);
 
             ResponseEntity<String> resp = restTemplate.postForEntity(yoloUrl, new HttpEntity<>(body, headers), String.class);
             if (!resp.getStatusCode().is2xxSuccessful()) {
@@ -186,6 +190,7 @@ public class YoloServiceImpl implements YoloService {
         UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(trimTrailingSlash(roboflowApiUrl))
                 .pathSegment(roboflowModelId.split("/"))
                 .queryParam("api_key", roboflowApiKey)
+                .queryParam("confidence", Math.round(confidenceThreshold * 100))
                 .queryParam("format", "json");
         if (base64Body) {
             builder.queryParam("image_type", "base64");

@@ -12,15 +12,20 @@ import com.agriculture.system.role.mapper.SysUserRoleMapper;
 import com.agriculture.system.service.LoginService;
 import com.agriculture.system.user.dto.LoginRequest;
 import com.agriculture.system.user.dto.RegisterRequest;
+import com.agriculture.system.user.entity.SysLoginLog;
 import com.agriculture.system.user.entity.SysUser;
+import com.agriculture.system.user.mapper.SysLoginLogMapper;
+import com.agriculture.system.user.mapper.SysUserMapper;
 import com.agriculture.system.user.service.SysUserService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,9 +44,11 @@ public class AuthController {
     private final SysMenuService menuService;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final SysUserMapper userMapper;
+    private final SysLoginLogMapper loginLogMapper;
 
     @PostMapping("/login")
-    public Result<Map<String, Object>> login(@Valid @RequestBody LoginRequest req) {
+    public Result<Map<String, Object>> login(@Valid @RequestBody LoginRequest req, HttpServletRequest request) {
         LoginUser loginUser = loginService.authenticate(req.getUsername(), req.getPassword());
         List<String> roles = loginUser.getRoles();
         String token = jwtUtil.generateAccessToken(loginUser.getId(), loginUser.getUsername(), roles);
@@ -59,7 +66,14 @@ public class AuthController {
             result.put("nickname", user.getNickname());
             result.put("avatar", user.getAvatar());
             result.put("userType", user.getUserType());
+
+            // 记录最后登录时间
+            user.setLastLoginTime(LocalDateTime.now());
+            userMapper.updateById(user);
         }
+
+        // 记录登录日志
+        saveLoginLog(loginUser.getId(), loginUser.getUsername(), request, true, null);
         return Result.ok("登录成功", result);
     }
 
@@ -118,6 +132,38 @@ public class AuthController {
             case 5 -> "CONSUMER";
             default -> "FARMER";
         };
+    }
+
+    private void saveLoginLog(Long userId, String username, HttpServletRequest request, boolean success, String remark) {
+        try {
+            SysLoginLog log = new SysLoginLog();
+            log.setUserId(userId);
+            log.setUsername(username);
+            log.setLoginIp(getClientIp(request));
+            log.setLoginStatus(success ? "SUCCESS" : "FAILED");
+            log.setLoginTime(LocalDateTime.now());
+            log.setRemark(remark);
+            String ua = request.getHeader("User-Agent");
+            if (ua != null) {
+                if (ua.contains("Edg") || ua.contains("Edge")) log.setBrowser("Edge");
+                else if (ua.contains("Chrome")) log.setBrowser("Chrome");
+                else if (ua.contains("Firefox")) log.setBrowser("Firefox");
+                else log.setBrowser(ua.length() > 50 ? ua.substring(0, 50) : ua);
+                if (ua.contains("Windows")) log.setOs("Windows");
+                else if (ua.contains("Mac")) log.setOs("macOS");
+                else if (ua.contains("Linux")) log.setOs("Linux");
+                else log.setOs("Unknown");
+            }
+            log.setLoginLocation("河南省郑州市");
+            loginLogMapper.insert(log);
+        } catch (Exception ignored) {}
+    }
+
+    private String getClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isBlank()) ip = request.getHeader("X-Real-IP");
+        if (ip == null || ip.isBlank()) ip = request.getRemoteAddr();
+        return ip != null && ip.length() > 45 ? ip.substring(0, 45) : ip;
     }
 
     @GetMapping("/userinfo")

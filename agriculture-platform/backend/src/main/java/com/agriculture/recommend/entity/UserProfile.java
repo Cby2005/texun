@@ -15,8 +15,9 @@ public class UserProfile {
     private String techPreference;
     private String regionPreference;
     private String profileText;
+    private String cropTags;
+    private String categoryWeights;
+    private LocalDateTime lastActiveTime;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
-    @TableLogic
-    private Integer deleted;
 }
